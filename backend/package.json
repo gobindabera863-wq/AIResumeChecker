@@ -1,0 +1,35 @@
+{
+  "name": "ai-resume-roaster-backend",
+  "version": "0.1.0",
+  "description": "backend for the AI Resume Roaster - ATS scoring, rewrites, version history",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.22.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "diff": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.5.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.1",
+    "morgan": "^1.11.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-s3": "^2.1.1",
+    "pdf-parse": "^1.1.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
