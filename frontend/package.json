@@ -1,0 +1,9 @@
+{
+  "name": "ai-resume-checker-frontend-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd AIresumeChecker/ai-resume-checker-ui-boilerplate-code && npm run dev",
+    "build": "cd AIresumeChecker/ai-resume-checker-ui-boilerplate-code && npm run build"
+  }
+}

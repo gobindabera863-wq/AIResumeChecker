@@ -21,7 +21,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    refresh();
+    const t = setTimeout(() => refresh(), 0);
+    return () => clearTimeout(t);
   }, [refresh]);
 
   const login = useCallback(async (credentials) => {
@@ -58,6 +59,7 @@ export function AuthProvider({ children }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");

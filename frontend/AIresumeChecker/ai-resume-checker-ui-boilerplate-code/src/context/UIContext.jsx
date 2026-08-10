@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -50,34 +50,43 @@ export function UIProvider({ children }) {
   );
 
   // Convenience helpers
-  toast.success = (title, description, opts) =>
-    toast({ title, description, variant: "success", ...opts });
-  toast.error = (title, description, opts) =>
-    toast({ title, description, variant: "error", ...opts });
-  toast.info = (title, description, opts) =>
-    toast({ title, description, variant: "info", ...opts });
+  /* eslint-disable react-hooks/immutability */
+  const toastObject = useMemo(() => {
+    const fn = (...args) => toast(...args);
+    fn.success = (title, description, opts) =>
+      toast({ title, description, variant: "success", ...opts });
+    fn.error = (title, description, opts) =>
+      toast({ title, description, variant: "error", ...opts });
+    fn.info = (title, description, opts) =>
+      toast({ title, description, variant: "info", ...opts });
+    return fn;
+  }, [toast]);
+  /* eslint-enable react-hooks/immutability */
 
   useEffect(() => {
+    const currentTimers = timers.current;
     return () => {
-      timers.current.forEach((t) => clearTimeout(t));
-      timers.current.clear();
+      currentTimers.forEach((t) => clearTimeout(t));
+      currentTimers.clear();
     };
   }, []);
 
   return (
-    <UIContext.Provider value={{ toast, dismiss }}>
+    <UIContext.Provider value={{ toast: toastObject, dismiss }}>
       {children}
       <ToastViewport toasts={toasts} dismiss={dismiss} />
     </UIContext.Provider>
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useToast() {
   const ctx = useContext(UIContext);
   if (!ctx) throw new Error("useToast must be used inside UIProvider");
   return ctx.toast;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUI() {
   const ctx = useContext(UIContext);
   if (!ctx) throw new Error("useUI must be used inside UIProvider");

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PDFViewer, PDFDownloadLink } from "@react-pdf/renderer";
 import { ArrowLeft, Download, FileText, Loader2 } from "lucide-react";
@@ -22,12 +22,8 @@ export default function Export() {
   const resume = data?.resume;
   const versions = data?.versions || [];
 
-  const [activeVersionId, setActiveVersionId] = useState(null);
-  useEffect(() => {
-    if (!activeVersionId && versions.length) {
-      setActiveVersionId(resume?.currentVersionId || versions[versions.length - 1]._id);
-    }
-  }, [versions, resume, activeVersionId]);
+  const [selectedVersionId, setSelectedVersionId] = useState(null);
+  const activeVersionId = selectedVersionId || resume?.currentVersionId || versions[versions.length - 1]?._id;
 
   const fullVersion = useFullVersion(id, activeVersionId);
   const version = fullVersion.data;
@@ -92,7 +88,7 @@ export default function Export() {
             <VersionSwitcher
               versions={versions}
               activeId={activeVersionId}
-              onChange={setActiveVersionId}
+              onChange={setSelectedVersionId}
             />
             {version && (
               <PDFDownloadLink

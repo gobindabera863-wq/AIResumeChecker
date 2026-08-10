@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Sparkles, ArrowLeft, Loader2, FileText, Download } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -31,14 +31,10 @@ export default function ResumeDetail() {
 
   const { data, isLoading, error } = useResume(id);
   const resume = data?.resume;
-  const versions = data?.versions || [];
+  const versions = useMemo(() => data?.versions || [], [data?.versions]);
 
-  const [activeVersionId, setActiveVersionId] = useState(null);
-  useEffect(() => {
-    if (!activeVersionId && versions.length) {
-      setActiveVersionId(resume?.currentVersionId || versions[versions.length - 1]._id);
-    }
-  }, [versions, resume, activeVersionId]);
+  const [selectedVersionId, setSelectedVersionId] = useState(null);
+  const activeVersionId = selectedVersionId || resume?.currentVersionId || versions[versions.length - 1]?._id;
 
   const activeVersion = useMemo(
     () => versions.find((v) => v._id === activeVersionId),
@@ -72,7 +68,7 @@ export default function ResumeDetail() {
       });
       if (res?.version?._id || res?.version?.versionNumber) {
         const newVersionId = res.version._id || `v-${res.version.versionNumber}`;
-        setActiveVersionId(newVersionId);
+        setSelectedVersionId(newVersionId);
         setTab("score");
         // Auto-analyze the new version with the same target role so the user
         // immediately sees whether their rewrites moved the score.
@@ -150,7 +146,7 @@ export default function ResumeDetail() {
             <VersionSwitcher
               versions={versions}
               activeId={activeVersionId}
-              onChange={setActiveVersionId}
+              onChange={setSelectedVersionId}
             />
           </div>
           <div className="flex items-center gap-3 flex-1 min-w-[280px] max-w-[520px]">

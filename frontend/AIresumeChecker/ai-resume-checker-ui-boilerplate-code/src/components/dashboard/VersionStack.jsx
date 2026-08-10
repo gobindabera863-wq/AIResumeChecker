@@ -22,10 +22,9 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-function deltaIcon(delta) {
-  if (delta > 0) return TrendingUp;
-  if (delta < 0) return TrendingDown;
-  return Minus;
+function DeltaIcon({ delta, size = 10, strokeWidth = 2.5 }) {
+  const Icon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
+  return <Icon size={size} strokeWidth={strokeWidth} />;
 }
 
 function tierFor(score) {
@@ -38,7 +37,6 @@ function tierFor(score) {
 function VersionPill({ version, delta, isLatest }) {
   const isUpload = (version.title || "").toLowerCase().includes("upload");
   const Icon = isUpload ? FileText : PenLine;
-  const DeltaIcon = deltaIcon(delta);
 
   return (
     <motion.div
@@ -87,7 +85,7 @@ function VersionPill({ version, delta, isLatest }) {
             isLatest && delta > 0 && "bg-white text-[var(--success)]"
           )}
         >
-          <DeltaIcon size={10} strokeWidth={2.5} />
+          <DeltaIcon delta={delta} size={10} strokeWidth={2.5} />
           {delta > 0 ? "+" : ""}
           {delta} pts
         </div>
@@ -199,7 +197,6 @@ export function VersionStack({ versions, resumeId, resumeTitle }) {
   const latest = visible[visible.length - 1];
   const first = visible[0];
   const totalDelta = (latest?.score || 0) - (first?.score || 0);
-  const TotalDeltaIcon = deltaIcon(totalDelta);
 
   return (
     <Card className="h-full flex flex-col">
@@ -268,7 +265,7 @@ export function VersionStack({ versions, resumeId, resumeTitle }) {
                 totalDelta === 0 && "bg-[var(--surface-2)] text-[var(--ink-muted)]"
               )}
             >
-              <TotalDeltaIcon size={12} strokeWidth={2.5} />
+              <DeltaIcon delta={totalDelta} size={12} strokeWidth={2.5} />
               {totalDelta > 0 ? "+" : ""}
               {totalDelta} pts overall
             </div>

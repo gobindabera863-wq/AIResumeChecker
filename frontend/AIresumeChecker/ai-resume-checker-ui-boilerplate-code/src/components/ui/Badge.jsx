@@ -22,4 +22,5 @@ export function Badge({ className, tone, ...props }) {
   return <span className={cn(badgeVariants({ tone }), className)} {...props} />;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { badgeVariants };
