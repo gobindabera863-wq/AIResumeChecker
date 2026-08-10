@@ -21,7 +21,8 @@ const uploadOptionsSchema = z.object({
 
 const analyzeBodySchema = z.object({
   targetRole: z.string().trim().max(100).optional(),
-  versionNumber: z.number().int().min(1).optional(),
+  versionNumber: z.union([z.number(), z.string()]).optional(),
+  versionId: z.union([z.number(), z.string()]).optional(),
 });
 
 const applyRewritesBodySchema = z.object({
@@ -101,7 +102,7 @@ router.post(
   requireAuth,
   analyzeLimiter,
   asyncHandler(async (req, res) => {
-    const { targetRole, versionNumber } = analyzeBodySchema.parse(req.body || {});
+    const { targetRole, versionNumber, versionId } = analyzeBodySchema.parse(req.body || {});
 
     const resume = await Resume.findOne({ _id: req.params.id, user: req.user._id });
     if (!resume) {
@@ -113,23 +114,38 @@ router.post(
     }
     const activeTargetRole = resume.targetRole || "";
 
-    const targetVerNum = versionNumber || resume.currentVersion;
-    const versionObj = resume.versions.find((v) => v.versionNumber === targetVerNum);
+    const requestedVer = versionId || versionNumber;
+    let versionObj = null;
+    if (requestedVer) {
+      versionObj = resume.versions.find(
+        (v) => String(v._id) === String(requestedVer) || String(v.versionNumber) === String(requestedVer)
+      );
+    }
+    if (!versionObj) {
+      versionObj = resume.versions.find((v) => v.versionNumber === resume.currentVersion) || resume.versions[resume.versions.length - 1];
+    }
 
     if (!versionObj) {
-      throw ApiError.notFound(`Resume version ${targetVerNum} not found`);
+      throw ApiError.notFound("Resume version not found");
     }
 
     const analysis = await analyzeResume(versionObj.rawText, versionObj.structuredData, activeTargetRole);
+    const versionIdStr = String(versionObj._id || `v-${versionObj.versionNumber}`);
+    const normalizedAnalysis = {
+      ...analysis,
+      versionId: versionIdStr,
+      versionNumber: versionObj.versionNumber,
+    };
 
-    versionObj.analysis = analysis;
+    versionObj.analysis = normalizedAnalysis;
     resume.markModified("versions");
     await resume.save();
 
     res.json({
-      message: `AI Analysis generated successfully for Version ${targetVerNum}`,
-      versionNumber: targetVerNum,
-      analysis,
+      message: `AI Analysis generated successfully for Version ${versionObj.versionNumber}`,
+      versionNumber: versionObj.versionNumber,
+      versionId: versionIdStr,
+      analysis: normalizedAnalysis,
       resume,
     });
   })

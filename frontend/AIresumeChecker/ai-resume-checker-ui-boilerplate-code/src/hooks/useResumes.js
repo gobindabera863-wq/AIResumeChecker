@@ -76,12 +76,8 @@ export function useAnalyzeResume(id) {
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: resumeKeys.detail(id) });
       qc.invalidateQueries({ queryKey: resumeKeys.analyses(id) });
+      qc.invalidateQueries({ queryKey: ["resumes", "analysis", id] });
       qc.invalidateQueries({ queryKey: dashboardKey });
-      if (data?.analysis?.versionId) {
-        qc.invalidateQueries({
-          queryKey: resumeKeys.versionAnalysis(id, data.analysis.versionId),
-        });
-      }
       toast.success(
         "Analysis complete",
         `ATS score ${data?.analysis?.atsScore ?? "—"} / 100`
