@@ -166,35 +166,40 @@ export default function Insights() {
         </div>
       </Card>
 
-      {/* Issues + Missing Keywords */}
+      {/* Issues + Strengths */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card>
           <CardHeader>
             <div>
-              <CardTitle className="text-base">Recurring Issues</CardTitle>
+              <CardTitle className="text-base">Recurring Issues & Fixes</CardTitle>
               <CardDescription className="mt-1">
                 What comes up most often across your analyses
               </CardDescription>
             </div>
           </CardHeader>
-          {data.topIssues.length === 0 ? (
+          {(!data.topIssues || data.topIssues.length === 0) ? (
             <p className="text-sm text-[var(--ink-muted)]">No issues recorded yet.</p>
           ) : (
             <div className="space-y-3">
               {data.topIssues.map((issue, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="h-8 w-8 rounded-xl bg-[var(--surface-2)] flex items-center justify-center text-[var(--ink-muted)] shrink-0">
-                    <AlertCircle size={14} />
+                <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl bg-[var(--surface-2)]">
+                  <div className="h-8 w-8 rounded-xl bg-[#F8E3E0] flex items-center justify-center text-[var(--danger)] shrink-0 mt-0.5">
+                    <AlertCircle size={15} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{issue.title}</div>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium truncate">{issue.title}</div>
                       <Badge tone={SEV_TONE[issue.severity] || "neutral"}>
                         {issue.severity}
                       </Badge>
-                      <span className="text-xs text-[var(--ink-muted)]">
-                        {issue.count}× across analyses
-                      </span>
+                    </div>
+                    {issue.fix && (
+                      <p className="text-xs text-[var(--ink-muted)] mt-1">
+                        <span className="font-semibold text-[var(--ink)]">Fix:</span> {issue.fix}
+                      </p>
+                    )}
+                    <div className="text-[10px] text-[var(--ink-muted)] mt-1 opacity-80">
+                      Found {issue.count}× across analyses
                     </div>
                   </div>
                 </div>
@@ -206,13 +211,55 @@ export default function Insights() {
         <Card>
           <CardHeader>
             <div>
+              <CardTitle className="text-base">Analyses Strengths</CardTitle>
+              <CardDescription className="mt-1">
+                Top strengths consistently detected across your resumes
+              </CardDescription>
+            </div>
+          </CardHeader>
+          {(!data.topStrengths || data.topStrengths.length === 0) ? (
+            <p className="text-sm text-[var(--ink-muted)]">
+              Run resume analyses to highlight your strongest features.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {data.topStrengths.map((str, i) => (
+                <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl bg-[var(--surface-2)]">
+                  <div className="h-8 w-8 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent-strong)] shrink-0 mt-0.5">
+                    <Sparkles size={15} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-sm font-medium truncate">{str.title}</div>
+                      <Badge tone="success">
+                        {str.count}× verified
+                      </Badge>
+                    </div>
+                    {str.detail && (
+                      <p className="text-xs text-[var(--ink-muted)] mt-1">
+                        {str.detail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Keywords section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card>
+          <CardHeader>
+            <div>
               <CardTitle className="text-base">Most-Missed Keywords</CardTitle>
               <CardDescription className="mt-1">
                 Words ATS expected but didn't see
               </CardDescription>
             </div>
           </CardHeader>
-          {data.topMissingKeywords.length === 0 ? (
+          {(!data.topMissingKeywords || data.topMissingKeywords.length === 0) ? (
             <p className="text-sm text-[var(--ink-muted)]">
               Nothing missing across your analyses — nice.
             </p>

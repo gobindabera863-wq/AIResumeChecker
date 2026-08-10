@@ -1,130 +1,189 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// RESUMES API — backed by mocks while the backend is offline.
-// TO ENABLE THE REAL BACKEND:
-//   1. Uncomment each `apiClient.*` line below.
-//   2. Delete the mock implementation block underneath.
-//   3. Delete the `import` from "@/mock/*".
-// ─────────────────────────────────────────────────────────────────────────────
+import { apiClient } from "./client";
 
-// import { apiClient } from "./client";
-import {
-  mockResumes,
-  mockAnalyses,
-  findMockResume,
-  listMockResumesShallow,
-} from "@/mock/resumes";
-import { mockDelay } from "@/mock/_helpers";
+function normalizeAnalysis(rawAnalysis) {
+  if (!rawAnalysis) return null;
+
+  const atsScore =
+    typeof rawAnalysis.atsScore === "number"
+      ? rawAnalysis.atsScore
+      : rawAnalysis.atsScore?.overall ?? 0;
+
+  const scoreBreakdown =
+    rawAnalysis.scoreBreakdown ||
+    rawAnalysis.atsScore?.breakdown || {
+      keywords: 20,
+      formatting: 20,
+      impact: 20,
+      clarity: 20,
+    };
+
+  const keywordsPresent =
+    rawAnalysis.keywordsPresent || rawAnalysis.keywords?.present || [];
+
+  const keywordsMissing =
+    rawAnalysis.keywordsMissing || rawAnalysis.keywords?.missing || [];
+
+  return {
+    ...rawAnalysis,
+    atsScore,
+    scoreBreakdown,
+    keywordsPresent,
+    keywordsMissing,
+    summary:
+      rawAnalysis.summary ||
+      "Overall, this resume demonstrates a solid technical foundation. Incorporating quantified scale metrics into experience bullets and targeted role keywords will maximize your ATS compliance score and interview callback rates.",
+    model: rawAnalysis.model || "Gemini AI",
+  };
+}
 
 export const resumesApi = {
-  // list: () => apiClient.get("/resumes").then((r) => r.data),
   list: async () => {
-    await mockDelay();
-    return { resumes: listMockResumesShallow() };
+    const res = await apiClient.get("/resumes");
+    const resumes = (res.data.resumes || []).map((r) => {
+      const versions = r.versions || [];
+      const latestVer = versions[versions.length - 1];
+      return {
+        ...r,
+        currentVersionId: latestVer?._id || `v-${r.currentVersion}`,
+        latestScore:
+          typeof latestVer?.analysis?.atsScore === "number"
+            ? latestVer.analysis.atsScore
+            : latestVer?.analysis?.atsScore?.overall || 0,
+      };
+    });
+    return { resumes };
   },
 
-  // get: (id) => apiClient.get(`/resumes/${id}`).then((r) => r.data),
   get: async (id) => {
-    await mockDelay();
-    const resume = findMockResume(id);
-    if (!resume) throw { status: 404, message: "Resume not found" };
+    const res = await apiClient.get(`/resumes/${id}`);
+    const resume = res.data.resume;
+    const versions = (resume?.versions || []).map((v) => ({
+      ...v,
+      _id: v._id || `v-${v.versionNumber}`,
+      id: v._id || `v-${v.versionNumber}`,
+      analysis: normalizeAnalysis(v.analysis),
+    }));
+    const latestVer = versions[versions.length - 1];
+
     return {
       resume: {
-        _id: resume._id,
-        title: resume.title,
-        createdAt: resume.createdAt,
-        updatedAt: resume.updatedAt,
-        currentVersionId: resume.currentVersionId,
+        ...resume,
+        currentVersionId: latestVer?._id || `v-${resume.currentVersion}`,
       },
-      versions: resume.versions,
+      versions,
     };
   },
 
-  // getVersion: (id, versionId) =>
-  //   apiClient.get(`/resumes/${id}/versions/${versionId}`).then((r) => r.data),
   getVersion: async (id, versionId) => {
-    await mockDelay();
-    const resume = findMockResume(id);
-    const version = resume?.versions.find((v) => v._id === versionId);
+    const res = await apiClient.get(`/resumes/${id}`);
+    const versions = res.data.resume?.versions || [];
+    const version = versions.find(
+      (v) => String(v._id) === String(versionId) || String(v.versionNumber) === String(versionId)
+    );
     if (!version) throw { status: 404, message: "Version not found" };
-    return { version };
-  },
-
-  // upload: (file, title) => {
-  //   const fd = new FormData();
-  //   fd.append("file", file);
-  //   if (title) fd.append("title", title);
-  //   return apiClient
-  //     .post("/resumes", fd, { headers: { "Content-Type": "multipart/form-data" } })
-  //     .then((r) => r.data);
-  // },
-  upload: async (file, title) => {
-    await mockDelay(800);
-    // Returns the most-recent mock resume so the UI navigates to a real detail page.
-    const resume = mockResumes[0];
     return {
-      resume: { ...resume, title: title || file?.name || resume.title },
+      version: {
+        ...version,
+        _id: version._id || `v-${version.versionNumber}`,
+        analysis: normalizeAnalysis(version.analysis),
+      },
     };
   },
 
-  // remove: (id) => apiClient.delete(`/resumes/${id}`).then((r) => r.data),
-  remove: async () => {
-    await mockDelay();
-    return { ok: true };
+  upload: async (file, title, targetRole = "") => {
+    const fd = new FormData();
+    fd.append("resume", file);
+    if (title) fd.append("title", title);
+    if (targetRole) fd.append("targetRole", targetRole);
+
+    const res = await apiClient.post("/resumes/upload", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
   },
 
-  // analyze: (id, body = {}) =>
-  //   apiClient.post(`/resumes/${id}/analyze`, body).then((r) => r.data),
-  analyze: async (_id, { versionId } = {}) => {
-    await mockDelay(1200);
-    const analysis =
-      mockAnalyses[versionId] || mockAnalyses[Object.keys(mockAnalyses)[0]];
-    return { analysis };
+  remove: async (id) => {
+    const res = await apiClient.delete(`/resumes/${id}`);
+    return res.data;
   },
 
-  // analyses: (id) => apiClient.get(`/resumes/${id}/analyses`).then((r) => r.data),
+  analyze: async (id, body = {}) => {
+    const res = await apiClient.post(`/resumes/${id}/analyze`, body);
+    if (res.data.analysis) {
+      res.data.analysis = normalizeAnalysis(res.data.analysis);
+    }
+    return res.data;
+  },
+
   analyses: async (id) => {
-    await mockDelay();
-    const resume = findMockResume(id);
-    const analyses = (resume?.versions || [])
-      .map((v) => mockAnalyses[v._id])
-      .filter(Boolean);
+    const res = await apiClient.get(`/resumes/${id}`);
+    const versions = res.data.resume?.versions || [];
+    const analyses = versions.map((v) => normalizeAnalysis(v.analysis)).filter(Boolean);
     return { analyses };
   },
 
-  // analysisForVersion: (id, versionId) =>
-  //   apiClient.get(`/resumes/${id}/versions/${versionId}/analysis`).then((r) => r.data),
-  analysisForVersion: async (_id, versionId) => {
-    await mockDelay();
-    const analysis = mockAnalyses[versionId];
-    if (!analysis) throw { status: 404, message: "No analysis for this version" };
-    return { analysis };
+  analysisForVersion: async (id, versionId) => {
+    const res = await apiClient.get(`/resumes/${id}`);
+    const versions = res.data.resume?.versions || [];
+    const ver = versions.find(
+      (v) => String(v._id) === String(versionId) || String(v.versionNumber) === String(versionId)
+    );
+    if (ver && ver.analysis) {
+      return { analysis: normalizeAnalysis(ver.analysis) };
+    }
+
+    const versionNum = ver ? ver.versionNumber : versionId;
+    const analysisRes = await apiClient.get(`/resumes/${id}/analysis`, {
+      params: { version: versionNum },
+    });
+    return { analysis: normalizeAnalysis(analysisRes.data.analysis) };
   },
 
-  // rewrite: (id, body) =>
-  //   apiClient.post(`/resumes/${id}/rewrite`, body).then((r) => r.data),
-  rewrite: async (id, { rewriteIds = [] } = {}) => {
-    await mockDelay(900);
-    const resume = findMockResume(id);
-    // Return the latest version as if it was the newly created one.
-    const latest = resume?.versions[resume.versions.length - 1];
+  rewrite: async (id, { rewriteIds = [], applyAll = false } = {}) => {
+    const res = await apiClient.post(`/resumes/${id}/apply-rewrites`, {
+      selectedRewriteIds: rewriteIds,
+      applyAll: applyAll || !rewriteIds.length,
+    });
     return {
-      version: latest,
-      appliedCount: rewriteIds.length || 4,
+      version: res.data.version,
+      appliedCount: res.data.appliedCount,
+      resume: res.data.resume,
     };
   },
 
-  // diff: (id, from, to, mode = "words") =>
-  //   apiClient.get(`/resumes/${id}/diff`, { params: { from, to, mode } }).then((r) => r.data),
-  diff: async () => {
-    await mockDelay();
+  diff: async (id, from, to, mode = "words") => {
+    const res = await apiClient.get(`/resumes/${id}/diff`, {
+      params: { v1: from, v2: to },
+    });
+    const diffData = res.data.diff || {};
+    const lineDiff = diffData.lineDiff || [];
+    const wordDiff = diffData.wordDiff || [];
+    const parts = mode === "lines" ? lineDiff : wordDiff;
+
+    let addedChars = 0;
+    let removedChars = 0;
+
+    parts.forEach((p) => {
+      if (p.added) addedChars += p.value.length;
+      if (p.removed) removedChars += p.value.length;
+    });
+
+    const hunks = lineDiff.map((chunk) => {
+      let type = "context";
+      if (chunk.added) type = "add";
+      if (chunk.removed) type = "remove";
+      return { type, text: chunk.value };
+    });
+
     return {
-      hunks: [
-        { type: "remove", text: "Worked on dashboards for the analytics team." },
-        { type: "add", text: "Shipped 4 React analytics dashboards adopted by 12k+ daily users — cut load time 38%." },
-        { type: "context", text: "Led migration from Webpack to Vite — build times down from 92s to 11s." },
-        { type: "remove", text: "Helped migrate the build system." },
-        { type: "add", text: "Owned design-system rewrite (40+ components, full WCAG AA pass)." },
-      ],
+      ...res.data,
+      diff: diffData,
+      parts,
+      stats: {
+        added: addedChars,
+        removed: removedChars,
+      },
+      hunks,
     };
   },
 };

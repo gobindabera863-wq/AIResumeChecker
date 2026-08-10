@@ -1,4 +1,13 @@
 {
+  "name": "ai-resume-checker",
+  "version": "1.0.0",
+  "description": "AI Resume Checker Full-Stack Application",
+  "scripts": {
+    "dev": "cd backend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend/AIresumeChecker/ai-resume-checker-ui-boilerplate-code && npm run dev",
+    "test:e2e": "cd backend && node scripts/e2e_test.js"
+  },
   "dependencies": {
     "dotenv": "^17.4.2",
     "mongoose": "^9.9.1"

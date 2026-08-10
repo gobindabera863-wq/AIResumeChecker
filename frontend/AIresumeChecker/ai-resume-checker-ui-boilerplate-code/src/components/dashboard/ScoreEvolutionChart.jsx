@@ -12,11 +12,18 @@ import { Badge } from "@/components/ui/Badge";
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
+  const item = payload[0].payload;
   return (
-    <div className="rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-hover px-3 py-2 text-xs">
-      <div className="text-[var(--ink-muted)]">{label}</div>
-      <div className="font-display tabular text-base font-semibold mt-0.5">
-        {payload[0].value}
+    <div className="rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-hover px-3.5 py-2.5 text-xs">
+      <div className="font-medium text-[var(--ink)] truncate max-w-[200px]">
+        {item.resumeTitle || "Resume"}
+      </div>
+      <div className="flex items-center gap-2 text-[var(--ink-muted)] text-[11px] mt-0.5">
+        <span className="font-semibold text-[var(--ink)]">{label || `V${item.versionNumber || 1}`}</span>
+        {item.dateLabel && <span>• {item.dateLabel}</span>}
+      </div>
+      <div className="font-display tabular text-lg font-semibold mt-1.5 text-[var(--accent)]">
+        {payload[0].value} <span className="text-xs font-normal text-[var(--ink-muted)]">/ 100</span>
       </div>
     </div>
   );

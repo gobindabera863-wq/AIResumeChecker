@@ -9,6 +9,10 @@ const { notFound, errorHandler } = require("./middleware/errorHandler");
 
 const healthRouter = require("./routes/health");
 const authRouter = require("./routes/auth");
+const resumesRouter = require("./routes/resumes");
+const dashboardRouter = require("./routes/dashboard");
+const insightsRouter = require("./routes/insights");
+const { historyRouter, versionsRouter } = require("./routes/history");
 
 const app = express();
 
@@ -30,6 +34,11 @@ app.get("/", (req, res) => {
 
 app.use("/api/health", healthRouter);
 app.use("/api/auth", authRouter);
+app.use("/api/resumes", resumesRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/insights", insightsRouter);
+app.use("/api/history", historyRouter);
+app.use("/api/versions", versionsRouter);
 
 app.use(notFound);
 app.use(errorHandler);

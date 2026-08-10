@@ -5,23 +5,39 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/Ca
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/lib/utils";
 
-const SEV_TONE = { low: "neutral", medium: "warning", high: "danger" };
+const SEV_TONE = {
+  critical: "danger",
+  high: "danger",
+  warning: "warning",
+  medium: "warning",
+  minor: "neutral",
+  low: "neutral",
+};
 
 function IssueItem({ issue }) {
   const [open, setOpen] = useState(false);
+  const problemText = issue.problem || issue.explanation || "";
+
   return (
     <button
       onClick={() => setOpen((v) => !v)}
       className="w-full text-left rounded-2xl bg-[var(--surface-2)] hover:bg-[var(--surface-2)]/80 border border-[var(--border)] p-4 transition-colors"
     >
       <div className="flex items-start gap-3">
-        <div className="h-8 w-8 rounded-xl bg-[var(--surface)] flex items-center justify-center shrink-0 text-[var(--ink-muted)]">
-          <AlertCircle size={14} />
+        <div className="h-8 w-8 rounded-xl bg-[var(--surface)] flex items-center justify-center shrink-0 text-[var(--ink-muted)] mt-0.5">
+          <AlertCircle size={15} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
-            <div className="font-medium text-sm text-[var(--ink)]">{issue.title}</div>
+            <div className="font-medium text-sm text-[var(--ink)] truncate">
+              {issue.title}
+            </div>
             <div className="flex items-center gap-2 shrink-0">
+              {issue.section && (
+                <span className="text-[11px] text-[var(--ink-muted)] font-medium px-2 py-0.5 rounded-md bg-[var(--surface)]">
+                  {issue.section}
+                </span>
+              )}
               <Badge tone={SEV_TONE[issue.severity] || "neutral"}>
                 {issue.severity}
               </Badge>
@@ -43,11 +59,13 @@ function IssueItem({ issue }) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="text-xs text-[var(--ink-muted)] mt-2">
-                  {issue.explanation}
-                </div>
+                {problemText && (
+                  <div className="text-xs text-[var(--ink-muted)] mt-2.5 leading-relaxed">
+                    <strong className="font-semibold text-[var(--ink)]">Problem:</strong> {problemText}
+                  </div>
+                )}
                 {issue.fix && (
-                  <div className="mt-2 text-xs rounded-xl bg-[var(--accent-soft)] text-[var(--accent-strong)] px-3 py-2">
+                  <div className="mt-2.5 text-xs rounded-xl bg-[var(--accent-soft)] text-[var(--accent-strong)] px-3 py-2 leading-relaxed">
                     <strong className="font-semibold">Fix:</strong> {issue.fix}
                   </div>
                 )}

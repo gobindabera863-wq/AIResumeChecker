@@ -64,15 +64,14 @@ export default function ResumeDetail() {
     }
   }
 
-  async function runApplyRewrites(rewriteIds) {
-    if (!analysis?._id) return;
+  async function runApplyRewrites(rewriteIds = []) {
     try {
       const res = await applyRewrites.mutateAsync({
-        analysisId: analysis._id,
-        rewriteIds: rewriteIds.length ? rewriteIds : undefined,
+        rewriteIds: rewriteIds && rewriteIds.length ? rewriteIds : undefined,
+        applyAll: !rewriteIds || !rewriteIds.length,
       });
-      if (res?.version?._id) {
-        const newVersionId = res.version._id;
+      if (res?.version?._id || res?.version?.versionNumber) {
+        const newVersionId = res.version._id || `v-${res.version.versionNumber}`;
         setActiveVersionId(newVersionId);
         setTab("score");
         // Auto-analyze the new version with the same target role so the user
@@ -205,10 +204,19 @@ export default function ResumeDetail() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-4">
-              <AtsGauge score={analysis.atsScore} delta={0} />
+              <AtsGauge
+                score={
+                  typeof analysis.atsScore === "number"
+                    ? analysis.atsScore
+                    : analysis.atsScore?.overall || 0
+                }
+                delta={0}
+              />
             </div>
             <div className="lg:col-span-5">
-              <ScoreBreakdown breakdown={analysis.scoreBreakdown} />
+              <ScoreBreakdown
+                breakdown={analysis.scoreBreakdown || analysis.atsScore?.breakdown}
+              />
             </div>
             <div className="lg:col-span-3">
               <Card className="h-full flex flex-col">
@@ -219,10 +227,12 @@ export default function ResumeDetail() {
                       AI overall summary
                     </CardDescription>
                   </div>
-                  <Badge tone="accent">{analysis.model}</Badge>
+                  <Badge tone="accent">{analysis.model || "Gemini AI"}</Badge>
                 </CardHeader>
                 <p className="text-sm text-[var(--ink)] leading-relaxed">
-                  {analysis.summary}
+                  {analysis.summary ||
+                    (analysis.strengths && analysis.strengths[0]?.detail) ||
+                    "Resume analysis completed."}
                 </p>
               </Card>
             </div>
@@ -241,15 +251,15 @@ export default function ResumeDetail() {
 
             <div className="mt-5">
               <TabsContent value="score">
-                <IssuesList issues={analysis.issues} />
+                <IssuesList issues={analysis.issues || []} />
               </TabsContent>
               <TabsContent value="strengths">
-                <StrengthsList strengths={analysis.strengths} />
+                <StrengthsList strengths={analysis.strengths || []} />
               </TabsContent>
               <TabsContent value="keywords">
                 <KeywordChips
-                  present={analysis.keywordsPresent}
-                  missing={analysis.keywordsMissing}
+                  present={analysis.keywordsPresent || analysis.keywords?.present || []}
+                  missing={analysis.keywordsMissing || analysis.keywords?.missing || []}
                 />
               </TabsContent>
               <TabsContent value="rewrites">
