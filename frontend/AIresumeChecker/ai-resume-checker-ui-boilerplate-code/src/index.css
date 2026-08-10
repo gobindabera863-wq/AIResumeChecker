@@ -1,11 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Inter:wght@400;500;600;700&family=Geist:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @theme {
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Geist", "Inter", sans-serif;
-  --font-serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-mono: "Space Grotesk", monospace;
 
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -20,48 +19,51 @@
   --color-warning: var(--warning);
   --color-danger: var(--danger);
 
-  --radius-card: 20px;
+  --radius-card: 22px;
   --radius-pill: 999px;
 }
 
 :root,
 [data-theme="light"] {
-  --bg: #f4f4f0;
-  --surface: #ffffff;
-  --surface-2: #fafaf7;
-  --border: rgba(15, 17, 21, 0.06);
-  --ink: #0f1115;
-  --ink-muted: #6b7280;
-  --accent: #5b7c6a;
-  --accent-strong: #2f4a3a;
-  --accent-soft: #e6efe8;
-  --accent-hero: #2f4a3a;
-  --accent-hero-2: #436354;
-  --success: #4a7a5d;
-  --warning: #c28a3a;
-  --danger: #b5564e;
-  --shadow-card: 0 1px 3px rgba(15, 17, 21, 0.04),
-    0 1px 2px rgba(15, 17, 21, 0.03);
-  --shadow-hover: 0 6px 20px rgba(15, 17, 21, 0.06);
+  --bg: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-2: #F1F5F9;
+  --border: rgba(15, 23, 42, 0.08);
+  --border-strong: rgba(15, 23, 42, 0.16);
+  --ink: #0F172A;
+  --ink-muted: #64748B;
+  --accent: #10B981;
+  --accent-strong: #047857;
+  --accent-soft: #ECFDF5;
+  --accent-hero: #064E3B;
+  --accent-hero-2: #047857;
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --shadow-card: 0 4px 20px -2px rgba(15, 23, 42, 0.05),
+    0 2px 6px -1px rgba(15, 23, 42, 0.03);
+  --shadow-hover: 0 20px 40px -15px rgba(16, 185, 129, 0.15),
+    0 10px 20px -5px rgba(15, 23, 42, 0.08);
 }
 
 [data-theme="dark"] {
-  --bg: #0f1115;
-  --surface: #16181d;
-  --surface-2: #1b1e24;
-  --border: rgba(255, 255, 255, 0.06);
-  --ink: #f2f2ee;
-  --ink-muted: #9aa0a6;
-  --accent: #8fb39c;
-  --accent-strong: #b6cfc0;
-  --accent-soft: rgba(143, 179, 156, 0.12);
-  --accent-hero: #1e3024;
-  --accent-hero-2: #2a4234;
-  --success: #8fb39c;
-  --warning: #d4a86a;
-  --danger: #d4847c;
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.35);
+  --bg: #0B0F17;
+  --surface: #131926;
+  --surface-2: #1E2638;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --ink: #F8FAFC;
+  --ink-muted: #94A3B8;
+  --accent: #34D399;
+  --accent-strong: #10B981;
+  --accent-soft: rgba(52, 211, 153, 0.12);
+  --accent-hero: #064E3B;
+  --accent-hero-2: #047857;
+  --success: #34D399;
+  --warning: #FBBF24;
+  --danger: #F87171;
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.4), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 20px 40px -15px rgba(52, 211, 153, 0.25), 0 10px 20px -5px rgba(0, 0, 0, 0.5);
 }
 
 html,
@@ -92,15 +94,37 @@ body {
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
-}
-
-.font-serif {
-  font-family: var(--font-serif);
+  letter-spacing: -0.03em;
 }
 
 .tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Custom Gradient Utilities */
+.gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #06B6D4 50%, #6366F1 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.glow-pill {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+}
+
+.glass-card {
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 ::-webkit-scrollbar {
@@ -108,15 +132,15 @@ body {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.2);
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
 }
 [data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.22);
 }

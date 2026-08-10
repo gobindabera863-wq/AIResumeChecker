@@ -66,17 +66,17 @@ export function FeaturesSection() {
   return (
     <section
       id="features"
-      className="relative px-3 sm:px-6 mt-18 sm:mt-36"
-      style={{ maxWidth: 1240, marginLeft: "auto", marginRight: "auto" }}
+      className="relative px-3 sm:px-6 mt-20 sm:mt-36"
+      style={{ maxWidth: 1280, marginLeft: "auto", marginRight: "auto" }}
     >
-      {/* Atmospheric sage glow behind the section header */}
+      {/* Atmospheric radial glow behind section header */}
       <div
         aria-hidden
-        className="absolute -top-20 left-1/2 -translate-x-1/2 w-[900px] h-[480px] pointer-events-none -z-10"
+        className="absolute -top-24 left-1/2 -translate-x-1/2 w-[1000px] h-[520px] pointer-events-none -z-10"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(143,179,156,0.18) 0%, rgba(143,179,156,0.06) 35%, transparent 70%)",
-          filter: "blur(60px)",
+            "radial-gradient(ellipse at center, rgba(16,185,129,0.20) 0%, rgba(99,102,241,0.08) 40%, transparent 70%)",
+          filter: "blur(70px)",
         }}
       />
 
@@ -84,94 +84,64 @@ export function FeaturesSection() {
         eyebrow="Features"
         title={
           <>
-            Everything your resume
+            Everything your resume{" "}
             <br className="hidden sm:block" /> needs to{" "}
-            <span
-              style={{
-                backgroundImage:
-                  "linear-gradient(120deg, #5B7C6A 0%, #2F4A3A 60%, #5B7C6A 100%)",
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                color: "transparent",
-              }}
-            >
+            <span className="gradient-text bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500">
               actually land.
             </span>
           </>
         }
-        sub="Eight surgical tools built around one workflow: upload, analyze, rewrite, ship."
+        sub="Eight surgical tools built around one seamless workflow: upload, analyze, rewrite, ship."
       />
 
-      <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
         {FEATURES.map((f, i) => (
           <motion.div
             key={f.title}
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-80px" }}
-            transition={{ duration: 0.5, delay: (i % 3) * 0.05 }}
-            className={`group relative rounded-[22px] border border-[var(--border)] shadow-card hover:shadow-hover transition-all duration-300 overflow-hidden ${f.span || ""}`}
-            style={{
-              background: "linear-gradient(180deg, #FFFFFF 0%, #FBFBF7 100%)",
-            }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.5, delay: (i % 3) * 0.06 }}
+            className={`group relative rounded-[24px] border border-[var(--border)] bg-[var(--surface)] shadow-card hover:shadow-hover hover:border-[var(--accent)] transition-all duration-300 overflow-hidden ${f.span || ""}`}
           >
-            {/* Top-edge gradient highlight (inset light line) */}
+            {/* Top-edge gradient highlight line */}
             <div
               aria-hidden
-              className="absolute inset-x-0 top-0 h-px pointer-events-none"
+              className="absolute inset-x-0 top-0 h-px pointer-events-none opacity-40 group-hover:opacity-100 transition-opacity"
               style={{
                 background:
-                  "linear-gradient(90deg, transparent, rgba(91,124,106,0.25), transparent)",
+                  "linear-gradient(90deg, transparent, var(--accent), transparent)",
               }}
             />
 
             {/* Corner halo on hover */}
             <div
               aria-hidden
-              className="absolute -top-24 -right-24 w-[260px] h-[260px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+              className="absolute -top-24 -right-24 w-[280px] h-[280px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(circle, rgba(143,179,156,0.28) 0%, rgba(143,179,156,0) 65%)",
-                filter: "blur(20px)",
+                  "radial-gradient(circle, rgba(16,185,129,0.18) 0%, transparent 70%)",
+                filter: "blur(24px)",
               }}
             />
 
-            <div className="relative p-5 sm:p-6">
-              <div className="flex items-start gap-3">
-                <div
-                  className="h-10 w-10 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-[1.06] transition-transform duration-300 text-[var(--accent-strong)]"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #EEF5EF 0%, #D9E7DD 100%)",
-                    boxShadow:
-                      "inset 0 1px 0 0 rgba(255,255,255,0.7), 0 1px 2px rgba(47,74,58,0.06)",
-                  }}
-                >
-                  <f.icon size={17} strokeWidth={2.25} />
+            <div className="relative p-6 sm:p-7">
+              <div className="flex items-start gap-4">
+                <div className="h-11 w-11 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300 bg-gradient-to-br from-emerald-500/15 to-teal-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-sm">
+                  <f.icon size={20} strokeWidth={2.2} />
                 </div>
-                <div>
-                  <h3 className="font-display text-[17px] font-semibold tracking-tight text-[var(--ink)]">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-display text-lg font-bold tracking-tight text-[var(--ink)]">
                     {f.title}
                   </h3>
-                  <p className="text-[13px] text-[var(--ink-muted)] mt-1 leading-relaxed">
+                  <p className="text-sm text-[var(--ink-muted)] leading-relaxed mt-1 font-normal">
                     {f.desc}
                   </p>
                 </div>
               </div>
 
-              <div className="mt-5">{f.preview}</div>
+              {f.preview && <div className="mt-5">{f.preview}</div>}
             </div>
-
-            {/* Bottom sage line on hover */}
-            <div
-              aria-hidden
-              className="absolute inset-x-0 -bottom-px h-px opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, var(--accent), transparent)",
-              }}
-            />
           </motion.div>
         ))}
       </div>
@@ -183,15 +153,16 @@ export function SectionHeader({ eyebrow, title, sub, center = true }) {
   return (
     <div className={center ? "text-center max-w-3xl mx-auto" : "max-w-3xl"}>
       {eyebrow && (
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--accent-soft)] text-[var(--accent-strong)] text-[11px] font-semibold uppercase tracking-[0.12em]">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 text-xs font-bold uppercase tracking-[0.14em] shadow-sm backdrop-blur-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           {eyebrow}
         </div>
       )}
-      <h2 className="font-display text-[34px] sm:text-[44px] lg:text-[52px] leading-[1.05] tracking-tight text-[var(--ink)] mt-4">
+      <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight text-[var(--ink)] mt-4">
         {title}
       </h2>
       {sub && (
-        <p className="text-[15px] sm:text-base text-[var(--ink-muted)] mt-4 leading-relaxed">
+        <p className="text-base sm:text-lg text-[var(--ink-muted)] mt-4 leading-relaxed font-normal max-w-2xl mx-auto">
           {sub}
         </p>
       )}
