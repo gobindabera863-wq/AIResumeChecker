@@ -166,6 +166,13 @@ npm run test:e2e
 
 ---
 
+## 👤 Author & Connect
+
+- **GitHub Repositories**: [gobindabera863-wq](https://github.com/gobindabera863-wq?tab=repositories)
+- **LinkedIn Profile**: [Gobinda Bera](https://www.linkedin.com/in/gobindabera)
+
+---
+
 ## 📜 License
 
 This project is licensed under the MIT License.

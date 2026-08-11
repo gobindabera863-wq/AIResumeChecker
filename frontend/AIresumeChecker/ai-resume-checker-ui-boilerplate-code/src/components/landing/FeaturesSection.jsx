@@ -86,7 +86,7 @@ export function FeaturesSection() {
           <>
             Everything your resume{" "}
             <br className="hidden sm:block" /> needs to{" "}
-            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent font-extrabold">
+            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 bg-clip-text text-transparent font-extrabold">
               actually land.
             </span>
           </>
@@ -153,16 +153,16 @@ export function SectionHeader({ eyebrow, title, sub, center = true }) {
   return (
     <div className={center ? "text-center max-w-3xl mx-auto" : "max-w-3xl"}>
       {eyebrow && (
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/12 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-xs font-bold uppercase tracking-[0.14em] shadow-sm backdrop-blur-md">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold uppercase tracking-[0.14em] shadow-sm">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           {eyebrow}
         </div>
       )}
-      <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight text-[#0F172A] dark:text-white mt-4">
+      <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] tracking-tight text-[#0F172A] mt-4">
         {title}
       </h2>
       {sub && (
-        <p className="text-base sm:text-lg text-[#475569] dark:text-slate-300 mt-4 leading-relaxed font-semibold max-w-2xl mx-auto">
+        <p className="text-base sm:text-lg text-[#64748B] mt-4 leading-relaxed font-semibold max-w-2xl mx-auto">
           {sub}
         </p>
       )}
