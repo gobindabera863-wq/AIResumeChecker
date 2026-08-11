@@ -97,7 +97,7 @@ export function KeywordChips({ present = [], missing = [] }) {
                 className="font-display tabular-nums text-[44px] font-semibold leading-none tracking-tight"
                 style={{
                   backgroundImage:
-                    "linear-gradient(135deg, #B6CFC0 0%, var(--accent) 45%, var(--accent-strong) 100%)",
+                    "linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 55%, #059669 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",

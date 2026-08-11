@@ -86,7 +86,7 @@ export function FeaturesSection() {
           <>
             Everything your resume{" "}
             <br className="hidden sm:block" /> needs to{" "}
-            <span className="gradient-text bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500">
+            <span className="gradient-text bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 dark:from-emerald-400 dark:via-teal-300 dark:to-emerald-400 font-extrabold">
               actually land.
             </span>
           </>

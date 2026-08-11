@@ -8,11 +8,11 @@ import { cn } from "@/lib/utils";
 function GradientNumber({ value, size = 32 }) {
   return (
     <span
-      className="font-display tabular-nums font-semibold leading-none tracking-tight"
+      className="font-display tabular-nums font-bold leading-none tracking-tight"
       style={{
         fontSize: size,
         backgroundImage:
-          "linear-gradient(135deg, #B6CFC0 0%, var(--accent) 45%, var(--accent-strong) 100%)",
+          "linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 55%, #059669 100%)",
         WebkitBackgroundClip: "text",
         backgroundClip: "text",
         color: "transparent",

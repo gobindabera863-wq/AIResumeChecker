@@ -21,10 +21,10 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/8 border border-white/10 backdrop-blur-md"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 backdrop-blur-md"
             >
-              <Sparkles size={12} className="text-[#B6CFC0]" />
-              <span className="text-[11px] tracking-wide text-white/85 uppercase font-semibold">
+              <Sparkles size={13} className="text-[#34D399]" />
+              <span className="text-[12px] tracking-wide text-emerald-200 uppercase font-bold">
                 Now scoring against ATS 2026 criteria
               </span>
             </motion.div>
@@ -33,19 +33,20 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.05 }}
-              className="font-display text-[48px] sm:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight mt-7"
+              className="font-display text-[48px] sm:text-[64px] lg:text-[80px] leading-[0.98] tracking-tight mt-7 font-extrabold"
             >
               Beat the ATS.
               <br />
-              <span className="text-white/50">Land more</span>{" "}
+              <span className="text-white/95">Land more</span>{" "}
               <span
                 style={{
                   backgroundImage:
-                    "linear-gradient(120deg, #B6CFC0 0%, #8FB39C 55%, #5B7C6A 100%)",
+                    "linear-gradient(120deg, #6EE7B7 0%, #34D399 45%, #A7F3D0 100%)",
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   color: "transparent",
+                  filter: "drop-shadow(0 2px 8px rgba(52, 211, 153, 0.3))",
                 }}
               >
                 interviews.
@@ -56,7 +57,7 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.15 }}
-              className="text-white/65 text-base sm:text-lg lg:text-[19px] mt-6 max-w-[540px] leading-relaxed"
+              className="text-white/90 text-base sm:text-lg lg:text-[19px] mt-6 max-w-[540px] leading-relaxed font-medium"
             >
               Upload your resume. Get an instant ATS score, fixable issues, and AI-rewritten bullets
               that actually sound like you — built for engineers, by engineers.
@@ -70,17 +71,17 @@ export function HeroSection() {
             >
               <Link
                 to="/register"
-                className="group relative inline-flex items-center gap-2 h-12 px-5 rounded-full font-semibold text-[14px] text-white shadow-[0_10px_30px_-8px_rgba(143,179,156,0.5)] transition-all hover:shadow-[0_14px_36px_-8px_rgba(143,179,156,0.7)] active:scale-[0.98]"
+                className="group relative inline-flex items-center gap-2 h-12 px-6 rounded-full font-bold text-[14px] text-white shadow-[0_10px_30px_-8px_rgba(52,211,153,0.6)] transition-all hover:shadow-[0_14px_36px_-8px_rgba(52,211,153,0.8)] active:scale-[0.98]"
                 style={{
                   background:
-                    "linear-gradient(135deg, #8FB39C 0%, #5B7C6A 55%, #2F4A3A 100%)",
+                    "linear-gradient(135deg, #10B981 0%, #047857 55%, #064E3B 100%)",
                 }}
               >
                 <span
                   className="absolute inset-0 rounded-full pointer-events-none"
                   style={{
                     background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, transparent 50%)",
+                      "linear-gradient(180deg, rgba(255,255,255,0.25) 0%, transparent 50%)",
                   }}
                 />
                 <span className="relative">Upload your resume</span>
@@ -89,7 +90,7 @@ export function HeroSection() {
 
               <a
                 href="#how-it-works"
-                className="inline-flex items-center gap-2 h-12 px-5 rounded-full font-medium text-[14px] text-white bg-white/8 border border-white/12 backdrop-blur-md hover:bg-white/12 transition-colors"
+                className="inline-flex items-center gap-2 h-12 px-5 rounded-full font-semibold text-[14px] text-white bg-white/12 border border-white/20 backdrop-blur-md hover:bg-white/20 transition-colors"
               >
                 <Play size={13} fill="currentColor" />
                 See how it works
@@ -100,18 +101,18 @@ export function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.4 }}
-              className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-8 text-[12px] text-white/55"
+              className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-8 text-[13px] text-white/80 font-medium"
             >
               <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck size={13} className="text-[#8FB39C]" />
+                <ShieldCheck size={14} className="text-[#34D399]" />
                 No credit card required
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 Free ATS analysis
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-1 w-1 rounded-full bg-white/30" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 47,300+ resumes analyzed
               </span>
             </motion.div>

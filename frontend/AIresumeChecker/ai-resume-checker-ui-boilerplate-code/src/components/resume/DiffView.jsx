@@ -9,8 +9,8 @@ import { useDiff } from "@/hooks/useResumes";
 function GradientNumber({ value, size = 32, palette = "sage" }) {
   const gradient =
     palette === "danger"
-      ? "linear-gradient(135deg, #F2B7B1 0%, var(--danger) 50%, #7A3A36 100%)"
-      : "linear-gradient(135deg, #B6CFC0 0%, var(--accent) 45%, var(--accent-strong) 100%)";
+      ? "linear-gradient(135deg, #DC2626 0%, #EF4444 55%, #991B1B 100%)"
+      : "linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 55%, #059669 100%)";
   return (
     <span
       className="font-display tabular-nums font-semibold leading-none tracking-tight"
