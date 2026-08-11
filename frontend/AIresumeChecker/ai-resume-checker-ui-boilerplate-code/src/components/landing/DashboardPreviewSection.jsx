@@ -23,7 +23,14 @@ export function DashboardPreviewSection() {
     >
       <SectionHeader
         eyebrow="Inside the product"
-        title={<>Every metric you'd ask for. None you wouldn't.</>}
+        title={
+          <>
+            Every metric you'd ask for.{" "}
+            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent font-extrabold">
+              None you wouldn't.
+            </span>
+          </>
+        }
         sub="A real glimpse at the dashboard you'll be using in two minutes."
       />
 

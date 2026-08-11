@@ -61,7 +61,14 @@ export function TestimonialsSection() {
     >
       <SectionHeader
         eyebrow="Testimonials"
-        title={<>Loved by engineers who've been there.</>}
+        title={
+          <>
+            Loved by engineers who've{" "}
+            <span className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 dark:from-emerald-400 dark:to-teal-300 bg-clip-text text-transparent font-extrabold">
+              been there.
+            </span>
+          </>
+        }
         sub="From new grads sweating their first SWE role to senior ICs switching domains."
       />
 
