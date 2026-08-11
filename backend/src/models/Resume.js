@@ -68,4 +68,4 @@ resumeSchema.methods.toJSON = function () {
   return obj;
 };
 
-module.exports = mongoose.model("Resume", resumeSchema);
+module.exports = mongoose.model("Resume", resumeSchema)
