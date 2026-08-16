@@ -1,14 +1,39 @@
 const { z } = require("zod");
 
+const normalizeBreakdownAxis = z
+  .union([z.number(), z.string()])
+  .transform((v) => {
+    const num = typeof v === "string" ? parseFloat(v) || 0 : v;
+    if (num <= 1.0 && num > 0) {
+      return Math.round(num * 25);
+    }
+    if (num > 25) {
+      return Math.min(25, Math.round((num / 100) * 25));
+    }
+    return Math.max(0, Math.min(25, Math.round(num)));
+  })
+  .default(18);
+
 const atsScoreBreakdownSchema = z.object({
-  keywords: z.number().min(0).max(100).default(70),
-  formatting: z.number().min(0).max(100).default(70),
-  impact: z.number().min(0).max(100).default(70),
-  clarity: z.number().min(0).max(100).default(70),
+  keywords: normalizeBreakdownAxis,
+  formatting: normalizeBreakdownAxis,
+  impact: normalizeBreakdownAxis,
+  clarity: normalizeBreakdownAxis,
 });
 
+const normalizeOverallScore = z
+  .union([z.number(), z.string()])
+  .transform((v) => {
+    const num = typeof v === "string" ? parseFloat(v) || 0 : v;
+    if (num <= 1.0 && num > 0) {
+      return Math.round(num * 100);
+    }
+    return Math.max(0, Math.min(100, Math.round(num)));
+  })
+  .default(70);
+
 const atsScoreSchema = z.object({
-  overall: z.number().min(0).max(100).default(70),
+  overall: normalizeOverallScore,
   breakdown: atsScoreBreakdownSchema.default({}),
 });
 

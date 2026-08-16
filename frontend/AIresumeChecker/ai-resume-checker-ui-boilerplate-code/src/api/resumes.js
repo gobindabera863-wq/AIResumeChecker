@@ -1,21 +1,37 @@
 import { apiClient } from "./client";
 
+function normalizeScore100(val, defaultVal = 0) {
+  if (val == null) return defaultVal;
+  const num = typeof val === "string" ? parseFloat(val) || 0 : Number(val);
+  if (num <= 1.0 && num > 0) return Math.round(num * 100);
+  return Math.max(0, Math.min(100, Math.round(num)));
+}
+
+function normalizeBreakdownVal(val, defaultVal = 18) {
+  if (val == null) return defaultVal;
+  const num = typeof val === "string" ? parseFloat(val) || 0 : Number(val);
+  if (num <= 1.0 && num > 0) return Math.round(num * 25);
+  if (num > 25) return Math.min(25, Math.round((num / 100) * 25));
+  return Math.max(0, Math.min(25, Math.round(num)));
+}
+
 function normalizeAnalysis(rawAnalysis) {
   if (!rawAnalysis) return null;
 
-  const atsScore =
+  const rawAts =
     typeof rawAnalysis.atsScore === "number"
       ? rawAnalysis.atsScore
       : rawAnalysis.atsScore?.overall ?? 0;
 
-  const scoreBreakdown =
-    rawAnalysis.scoreBreakdown ||
-    rawAnalysis.atsScore?.breakdown || {
-      keywords: 20,
-      formatting: 20,
-      impact: 20,
-      clarity: 20,
-    };
+  const atsScore = normalizeScore100(rawAts);
+
+  const rawBd = rawAnalysis.scoreBreakdown || rawAnalysis.atsScore?.breakdown || {};
+  const scoreBreakdown = {
+    keywords: normalizeBreakdownVal(rawBd.keywords, 18),
+    formatting: normalizeBreakdownVal(rawBd.formatting, 20),
+    impact: normalizeBreakdownVal(rawBd.impact, 16),
+    clarity: normalizeBreakdownVal(rawBd.clarity, 19),
+  };
 
   const keywordsPresent =
     rawAnalysis.keywordsPresent ||

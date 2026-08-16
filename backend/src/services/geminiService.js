@@ -484,7 +484,7 @@ Analyze the candidate's resume for the target role: "${targetRole || "Software E
 
 Provide AI Analysis strictly in valid JSON format with top-level keys:
 - "summary": string (A concise 2-3 sentence executive AI verdict summarizing candidate strengths, key ATS gaps, and action advice)
-- "atsScore": { "overall": number, "breakdown": { "keywords": number, "formatting": number, "impact": number, "clarity": number } }
+- "atsScore": { "overall": <integer 0-100: e.g. 75, NOT decimal 0.75>, "breakdown": { "keywords": <integer 0-25: e.g. 19>, "formatting": <integer 0-25: e.g. 21>, "impact": <integer 0-25: e.g. 17>, "clarity": <integer 0-25: e.g. 20> } }
 - "issues": Array of 5 items [{ "id", "title", "severity", "section", "problem", "fix" }]
 - "strengths": Array of 5 items [{ "id", "title", "section", "detail", "evidence" }]
 - "bulletRewrites": Array of 5-10 items [{ "id", "original", "rewritten", "section", "rationale", "metricsAdded": boolean }]

@@ -75,26 +75,46 @@ const groqKeywordsSchema = z.object({
   present: z.array(z.string().trim()).default([]),
 });
 
+const normalizeScore0To100 = z
+  .union([z.number(), z.string()])
+  .transform((v) => {
+    const num = typeof v === "string" ? parseFloat(v) || 0 : v;
+    if (num <= 1.0 && num > 0) {
+      return Math.round(num * 100);
+    }
+    return Math.max(0, Math.min(100, Math.round(num)));
+  })
+  .default(0);
+
 const groqSectionScoresSchema = z
   .object({
-    summary: z.number().min(0).max(100).default(0),
-    education: z.number().min(0).max(100).default(0),
-    skills: z.number().min(0).max(100).default(0),
-    experience: z.number().min(0).max(100).default(0),
-    projects: z.number().min(0).max(100).default(0),
-    certifications: z.number().min(0).max(100).default(0),
-    achievements: z.number().min(0).max(100).default(0),
+    summary: normalizeScore0To100,
+    education: normalizeScore0To100,
+    skills: normalizeScore0To100,
+    experience: normalizeScore0To100,
+    projects: normalizeScore0To100,
+    certifications: normalizeScore0To100,
+    achievements: normalizeScore0To100,
   })
   .passthrough();
 
 const groqAnalysisSchema = z.object({
   // Core scores
-  overallScore: z.number().min(0).max(100).default(0),
-  atsScore: z.union([
-    z.number(),
-    z.object({ overall: z.number().min(0).max(100).default(0) }).passthrough(),
-  ]).transform((v) => (typeof v === "number" ? v : v.overall ?? 0)).default(0),
-  jobMatchScore: z.number().min(0).max(100).default(0),
+  overallScore: normalizeScore0To100,
+  atsScore: z
+    .union([
+      z.number(),
+      z.string(),
+      z.object({ overall: z.union([z.number(), z.string()]).default(0) }).passthrough(),
+    ])
+    .transform((v) => {
+      let rawVal = typeof v === "object" && v !== null ? v.overall ?? 0 : v;
+      const num = typeof rawVal === "string" ? parseFloat(rawVal) || 0 : rawVal;
+      if (num <= 1.0 && num > 0) return Math.round(num * 100);
+      return Math.max(0, Math.min(100, Math.round(num)));
+    })
+    .default(0),
+  jobMatchScore: normalizeScore0To100,
 
   // Summary text
   summary: z.string().trim().default(""),
