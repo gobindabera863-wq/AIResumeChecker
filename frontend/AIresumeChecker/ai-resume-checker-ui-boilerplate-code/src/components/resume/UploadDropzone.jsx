@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { motion } from "framer-motion";
-import { UploadCloud, FileText, X, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { UploadCloud, FileText, X, Loader2, Brain, Cpu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -9,27 +9,93 @@ import { useUploadResume } from "@/hooks/useResumes";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
+const UPLOAD_STEPS = [
+  { icon: UploadCloud, label: "Uploading file…" },
+  { icon: FileText,  label: "Extracting text…" },
+  { icon: Brain,     label: "Parsing resume…"  },
+  { icon: Cpu,       label: "Running AI analysis…" },
+];
+
 function formatBytes(n) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function UploadProgress() {
+  const [step, setStep] = useState(0);
+
+  if (step < UPLOAD_STEPS.length - 1) {
+    setTimeout(() => setStep((s) => Math.min(s + 1, UPLOAD_STEPS.length - 1)), 1800);
+  }
+
+  const current = UPLOAD_STEPS[step];
+
+  return (
+    <div className="space-y-3 py-2">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-[var(--accent-soft)] flex items-center justify-center text-[var(--accent-strong)] shrink-0">
+          <Loader2 size={16} className="animate-spin" />
+        </div>
+        <div className="flex-1">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.2 }}
+              className="text-sm font-medium text-[var(--ink)]"
+            >
+              {current.label}
+            </motion.div>
+          </AnimatePresence>
+          <div className="text-xs text-[var(--ink-muted)] mt-0.5">This may take 15–30 seconds</div>
+        </div>
+      </div>
+      <div className="h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-[var(--accent)] to-emerald-400 rounded-full"
+          initial={{ width: "5%" }}
+          animate={{ width: `${((step + 1) / UPLOAD_STEPS.length) * 100}%` }}
+          transition={{ duration: 1.5, ease: "easeInOut" }}
+        />
+      </div>
+      <div className="flex gap-1.5 mt-1">
+        {UPLOAD_STEPS.map((s, i) => (
+          <div
+            key={i}
+            className={cn(
+              "h-1.5 flex-1 rounded-full transition-colors duration-500",
+              i <= step ? "bg-[var(--accent)]" : "bg-[var(--border)]"
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function UploadDropzone({ onUploaded, compact = false }) {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [showJdField, setShowJdField] = useState(false);
   const [err, setErr] = useState("");
   const upload = useUploadResume();
 
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
-    accept: { "application/pdf": [".pdf"] },
+    accept: {
+      "application/pdf": [".pdf"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+    },
     maxFiles: 1,
     maxSize: MAX_BYTES,
     multiple: false,
     onDropAccepted: (files) => {
       setErr("");
       setFile(files[0]);
-      if (!title) setTitle(files[0].name.replace(/\.pdf$/i, ""));
+      if (!title) setTitle(files[0].name.replace(/\.(pdf|docx)$/i, ""));
     },
     onDropRejected: (rejections) => {
       const reason = rejections?.[0]?.errors?.[0]?.message || "File rejected";
@@ -41,9 +107,11 @@ export function UploadDropzone({ onUploaded, compact = false }) {
     if (!file) return;
     setErr("");
     try {
-      const data = await upload.mutateAsync({ file, title });
+      const data = await upload.mutateAsync({ file, title, jobDescription });
       setFile(null);
       setTitle("");
+      setJobDescription("");
+      setShowJdField(false);
       onUploaded?.(data.resume);
     } catch (e) {
       setErr(e.message || "Upload failed");
@@ -53,6 +121,8 @@ export function UploadDropzone({ onUploaded, compact = false }) {
   function reset() {
     setFile(null);
     setTitle("");
+    setJobDescription("");
+    setShowJdField(false);
     setErr("");
   }
 
@@ -85,10 +155,10 @@ export function UploadDropzone({ onUploaded, compact = false }) {
               <UploadCloud size={compact ? 18 : 22} />
             </motion.div>
             <div className={cn("font-display font-semibold tracking-tight", compact ? "text-sm" : "text-base")}>
-              {isDragActive ? "Drop it here" : "Drop your resume PDF"}
+              {isDragActive ? "Drop it here" : "Drop your resume"}
             </div>
             <div className="text-xs text-[var(--ink-muted)] mt-1">
-              or click to browse · max 5 MB · PDF only
+              or click to browse · PDF or DOCX · max 5 MB
             </div>
           </div>
         </div>
@@ -113,13 +183,43 @@ export function UploadDropzone({ onUploaded, compact = false }) {
         </div>
       )}
 
-      {file && (
+      {file && !upload.isPending && (
         <div className="space-y-3">
           <Input
             placeholder="Resume title (optional)"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowJdField((v) => !v)}
+              className="text-xs text-[var(--accent-strong)] hover:underline flex items-center gap-1 transition-colors"
+            >
+              {showJdField ? "▾ Hide job description" : "▸ Paste job description (boosts match scoring)"}
+            </button>
+            <AnimatePresence>
+              {showJdField && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <textarea
+                    className="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] p-3 resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
+                    rows={5}
+                    placeholder="Paste the job description here to get a job match score and tailored skill gap analysis…"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <Button
             onClick={submit}
             variant="accent"
@@ -127,17 +227,12 @@ export function UploadDropzone({ onUploaded, compact = false }) {
             disabled={upload.isPending}
             className="w-full"
           >
-            {upload.isPending ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                Parsing…
-              </>
-            ) : (
-              "Upload & parse"
-            )}
+            Upload &amp; Analyze
           </Button>
         </div>
       )}
+
+      {file && upload.isPending && <UploadProgress />}
 
       {err && (
         <div className="text-xs text-[var(--danger)] bg-[#F8E3E0] rounded-xl px-3 py-2">

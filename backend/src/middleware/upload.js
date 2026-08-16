@@ -3,14 +3,22 @@ const ApiError = require("../utils/ApiError");
 
 const storage = multer.memoryStorage();
 
-const fileFilter = (req, file, cb) => {
-  const isPdfMime = file.mimetype === "application/pdf";
-  const isPdfExt = file.originalname.toLowerCase().endsWith(".pdf");
+const ALLOWED_MIMETYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
-  if (isPdfMime || isPdfExt) {
+const ALLOWED_EXTENSIONS = [".pdf", ".docx"];
+
+const fileFilter = (req, file, cb) => {
+  const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf("."));
+  const isMimeOk = ALLOWED_MIMETYPES.includes(file.mimetype);
+  const isExtOk = ALLOWED_EXTENSIONS.includes(ext);
+
+  if (isMimeOk || isExtOk) {
     cb(null, true);
   } else {
-    cb(ApiError.badRequest("Only PDF files are allowed. Please upload a valid PDF file."));
+    cb(ApiError.badRequest("Only PDF and DOCX files are allowed. Please upload a valid resume file."));
   }
 };
 
@@ -28,14 +36,14 @@ function handleUploadMiddleware(field) {
     singleUpload(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
-          return next(ApiError.badRequest("File size exceeds 5MB limit. Please upload a smaller PDF."));
+          return next(ApiError.badRequest("File size exceeds 5MB limit. Please upload a smaller file."));
         }
         return next(ApiError.badRequest(err.message));
       } else if (err) {
         return next(err);
       }
       if (!req.file) {
-        return next(ApiError.badRequest("No PDF file uploaded. Please select a PDF file."));
+        return next(ApiError.badRequest("No resume file uploaded. Please select a PDF or DOCX file."));
       }
       next();
     });

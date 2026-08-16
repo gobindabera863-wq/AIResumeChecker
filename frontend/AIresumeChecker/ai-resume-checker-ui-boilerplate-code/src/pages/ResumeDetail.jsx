@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Sparkles, ArrowLeft, Loader2, FileText, Download } from "lucide-react";
+import { Sparkles, ArrowLeft, Loader2, FileText, Download, Brain } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +15,7 @@ import { IssuesList } from "@/components/analysis/IssuesList";
 import { StrengthsList } from "@/components/analysis/StrengthsList";
 import { KeywordChips } from "@/components/analysis/KeywordChips";
 import { BulletRewrites } from "@/components/analysis/BulletRewrites";
+import { GroqAnalysisPanel } from "@/components/analysis/GroqAnalysisPanel";
 import { VersionSwitcher } from "@/components/resume/VersionSwitcher";
 import { DiffView } from "@/components/resume/DiffView";
 import { relativeTime } from "@/lib/utils";
@@ -23,6 +24,7 @@ import {
   useAnalysisForVersion,
   useAnalyzeResume,
   useApplyRewrites,
+  useGroqAnalyze,
 } from "@/hooks/useResumes";
 
 export default function ResumeDetail() {
@@ -42,12 +44,23 @@ export default function ResumeDetail() {
   );
 
   const analysisQuery = useAnalysisForVersion(id, activeVersionId);
-  const analysis = analysisQuery.data;
+  const analysis = analysisQuery.data?.analysis;
+  const extendedAnalysis =
+    analysisQuery.data?.extendedAnalysis ||
+    activeVersion?.extendedAnalysis ||
+    null;
 
   const analyze = useAnalyzeResume(id);
   const applyRewrites = useApplyRewrites(id);
+  const groqAnalyze = useGroqAnalyze(id);
+
   const [targetRole, setTargetRole] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [showJdDeep, setShowJdDeep] = useState(false);
   const [tab, setTab] = useState("score");
+
+  const [liveExtended, setLiveExtended] = useState(null);
+  const activeExtended = liveExtended || extendedAnalysis;
 
   async function runAnalyze() {
     try {
@@ -56,7 +69,23 @@ export default function ResumeDetail() {
         targetRole: targetRole.trim() || undefined,
       });
     } catch {
-      /* surfaced below */
+      /* surfaced in UI */
+    }
+  }
+
+  async function runGroqAnalyze() {
+    try {
+      const result = await groqAnalyze.mutateAsync({
+        versionId: activeVersionId,
+        targetRole: targetRole.trim() || undefined,
+        jobDescription: jobDescription.trim() || undefined,
+      });
+      if (result?.extendedAnalysis) {
+        setLiveExtended(result.extendedAnalysis);
+        setTab("deep");
+      }
+    } catch {
+      /* surfaced in UI */
     }
   }
 
@@ -69,20 +98,19 @@ export default function ResumeDetail() {
       if (res?.version?._id || res?.version?.versionNumber) {
         const newVersionId = res.version._id || `v-${res.version.versionNumber}`;
         setSelectedVersionId(newVersionId);
+        setLiveExtended(null);
         setTab("score");
-        // Auto-analyze the new version with the same target role so the user
-        // immediately sees whether their rewrites moved the score.
         try {
           await analyze.mutateAsync({
             versionId: newVersionId,
             targetRole: targetRole.trim() || undefined,
           });
         } catch {
-          /* surfaced via analyze.error inside the Run analysis card */
+          /* surfaced in UI */
         }
       }
     } catch {
-      /* surfaced inside the card */
+      /* surfaced in UI */
     }
   }
 
@@ -136,12 +164,13 @@ export default function ResumeDetail() {
         }
       />
 
+      {/* ── Analyze Card ── */}
       <Card>
-        <div className="flex flex-wrap items-end gap-4 justify-between">
+        <div className="flex flex-wrap items-start gap-4 justify-between">
           <div className="space-y-2">
             <CardTitle className="text-base">Run analysis</CardTitle>
             <CardDescription>
-              Score this version with Gemini and get issues, strengths, and rewrites.
+              Score this version with AI and get issues, strengths, and rewrites.
             </CardDescription>
             <VersionSwitcher
               versions={versions}
@@ -149,29 +178,61 @@ export default function ResumeDetail() {
               onChange={setSelectedVersionId}
             />
           </div>
-          <div className="flex items-center gap-3 flex-1 min-w-[280px] max-w-[520px]">
+          <div className="flex flex-col gap-3 flex-1 min-w-[280px] max-w-[560px]">
             <Input
               placeholder="Target role (optional, e.g. Senior Frontend Engineer)"
               value={targetRole}
               onChange={(e) => setTargetRole(e.target.value)}
             />
-            <Button
-              variant="accent"
-              size="lg"
-              onClick={runAnalyze}
-              disabled={analyze.isPending || !activeVersionId}
-              className="shrink-0"
-            >
-              {analyze.isPending ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" /> Analyzing…
-                </>
-              ) : (
-                <>
-                  <Sparkles size={14} /> Analyze
-                </>
+
+            {/* Job description toggle */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowJdDeep((v) => !v)}
+                className="text-xs text-[var(--accent-strong)] hover:underline transition-colors"
+              >
+                {showJdDeep ? "▾ Hide job description" : "▸ Add job description (enables match scoring)"}
+              </button>
+              {showJdDeep && (
+                <textarea
+                  className="mt-2 w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-muted)] p-3 resize-none focus:outline-none focus:border-[var(--accent)] transition-colors"
+                  rows={4}
+                  placeholder="Paste the job description here…"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                />
               )}
-            </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="accent"
+                size="lg"
+                onClick={runAnalyze}
+                disabled={analyze.isPending || groqAnalyze.isPending || !activeVersionId}
+                className="flex-1"
+              >
+                {analyze.isPending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Analyzing…</>
+                ) : (
+                  <><Sparkles size={14} /> Quick Analyze</>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={runGroqAnalyze}
+                disabled={groqAnalyze.isPending || analyze.isPending || !activeVersionId}
+                className="flex-1"
+              >
+                {groqAnalyze.isPending ? (
+                  <><Loader2 size={14} className="animate-spin" /> Deep Analyzing…</>
+                ) : (
+                  <><Brain size={14} /> Deep Analyze</>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
         {analyze.error && (
@@ -179,13 +240,18 @@ export default function ResumeDetail() {
             {analyze.error.message}
           </div>
         )}
+        {groqAnalyze.error && (
+          <div className="mt-2 text-xs text-[var(--danger)] bg-[#F8E3E0] rounded-xl px-3 py-2">
+            {groqAnalyze.error.message}
+          </div>
+        )}
       </Card>
 
-      {!analysis && !analysisQuery.isLoading && (
+      {!analysis && !activeExtended && !analysisQuery.isLoading && (
         <EmptyState
           icon={Sparkles}
           title="No analysis yet for this version"
-          description="Click Analyze above to score this resume version with AI."
+          description="Click Quick Analyze for ATS scoring, or Deep Analyze for a full Groq-powered breakdown."
         />
       )}
 
@@ -196,43 +262,45 @@ export default function ResumeDetail() {
         </div>
       )}
 
-      {analysis && (
+      {(analysis || activeExtended) && (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-4">
-              <AtsGauge
-                score={
-                  typeof analysis.atsScore === "number"
-                    ? analysis.atsScore
-                    : analysis.atsScore?.overall || 0
-                }
-                delta={0}
-              />
+          {analysis && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              <div className="lg:col-span-4">
+                <AtsGauge
+                  score={
+                    typeof analysis.atsScore === "number"
+                      ? analysis.atsScore
+                      : analysis.atsScore?.overall || 0
+                  }
+                  delta={0}
+                />
+              </div>
+              <div className="lg:col-span-5">
+                <ScoreBreakdown
+                  breakdown={analysis.scoreBreakdown || analysis.atsScore?.breakdown}
+                />
+              </div>
+              <div className="lg:col-span-3">
+                <Card className="h-full flex flex-col">
+                  <CardHeader>
+                    <div>
+                      <CardTitle className="text-base">Verdict</CardTitle>
+                      <CardDescription className="mt-1">
+                        AI overall summary
+                      </CardDescription>
+                    </div>
+                    <Badge tone="accent">{analysis.model || "AI"}</Badge>
+                  </CardHeader>
+                  <p className="text-sm text-[var(--ink)] leading-relaxed">
+                    {analysis.summary ||
+                      (analysis.strengths && analysis.strengths[0]?.detail) ||
+                      "Resume analysis completed."}
+                  </p>
+                </Card>
+              </div>
             </div>
-            <div className="lg:col-span-5">
-              <ScoreBreakdown
-                breakdown={analysis.scoreBreakdown || analysis.atsScore?.breakdown}
-              />
-            </div>
-            <div className="lg:col-span-3">
-              <Card className="h-full flex flex-col">
-                <CardHeader>
-                  <div>
-                    <CardTitle className="text-base">Verdict</CardTitle>
-                    <CardDescription className="mt-1">
-                      AI overall summary
-                    </CardDescription>
-                  </div>
-                  <Badge tone="accent">{analysis.model || "Gemini AI"}</Badge>
-                </CardHeader>
-                <p className="text-sm text-[var(--ink)] leading-relaxed">
-                  {analysis.summary ||
-                    (analysis.strengths && analysis.strengths[0]?.detail) ||
-                    "Resume analysis completed."}
-                </p>
-              </Card>
-            </div>
-          </div>
+          )}
 
           <Tabs value={tab} onValueChange={setTab}>
             <TabsList>
@@ -240,6 +308,12 @@ export default function ResumeDetail() {
               <TabsTrigger value="strengths">Strengths</TabsTrigger>
               <TabsTrigger value="keywords">Keywords</TabsTrigger>
               <TabsTrigger value="rewrites">Rewrites</TabsTrigger>
+              {activeExtended && (
+                <TabsTrigger value="deep">
+                  <Brain size={12} className="mr-1" />
+                  Deep Analysis
+                </TabsTrigger>
+              )}
               {versions.length >= 2 && (
                 <TabsTrigger value="diff">Diff</TabsTrigger>
               )}
@@ -247,24 +321,45 @@ export default function ResumeDetail() {
 
             <div className="mt-5">
               <TabsContent value="score">
-                <IssuesList issues={analysis.issues || []} />
+                <IssuesList issues={analysis?.issues || []} />
               </TabsContent>
               <TabsContent value="strengths">
-                <StrengthsList strengths={analysis.strengths || []} />
+                <StrengthsList strengths={analysis?.strengths || []} />
               </TabsContent>
               <TabsContent value="keywords">
                 <KeywordChips
-                  present={analysis.keywordsPresent || analysis.keywords?.present || []}
-                  missing={analysis.keywordsMissing || analysis.keywords?.missing || []}
+                  present={analysis?.keywordsPresent || analysis?.keywords?.present || []}
+                  missing={analysis?.keywordsMissing || analysis?.keywords?.missing || []}
                 />
               </TabsContent>
               <TabsContent value="rewrites">
                 <BulletRewrites
-                  rewrites={analysis.bulletRewrites}
+                  rewrites={analysis?.bulletRewrites}
                   onApply={runApplyRewrites}
                   isApplying={applyRewrites.isPending}
                   error={applyRewrites.error?.message}
                 />
+              </TabsContent>
+              <TabsContent value="deep">
+                {groqAnalyze.isPending ? (
+                  <div className="space-y-3 py-6">
+                    <Skeleton className="h-[140px] rounded-3xl" />
+                    <div className="grid grid-cols-3 gap-4">
+                      <Skeleton className="h-[160px] rounded-3xl" />
+                      <Skeleton className="h-[160px] rounded-3xl" />
+                      <Skeleton className="h-[160px] rounded-3xl" />
+                    </div>
+                    <Skeleton className="h-[200px] rounded-3xl" />
+                  </div>
+                ) : activeExtended ? (
+                  <GroqAnalysisPanel analysis={activeExtended} />
+                ) : (
+                  <EmptyState
+                    icon={Brain}
+                    title="No deep analysis yet"
+                    description="Click Deep Analyze above to get a full Groq-powered breakdown with job match score, skills gap, section scores, and bullet improvements."
+                  />
+                )}
               </TabsContent>
               <TabsContent value="diff">
                 <DiffView resumeId={id} versions={versions} />

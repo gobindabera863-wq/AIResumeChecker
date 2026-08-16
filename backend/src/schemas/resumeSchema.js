@@ -1,10 +1,27 @@
 const { z } = require("zod");
 
+const locationSchema = z
+  .union([
+    z.string(),
+    z
+      .object({
+        city: z.string().optional(),
+        state: z.string().optional(),
+        country: z.string().optional(),
+        address: z.string().optional(),
+      })
+      .transform((loc) =>
+        [loc.address, loc.city, loc.state, loc.country].filter(Boolean).join(", ")
+      ),
+  ])
+  .transform(String)
+  .default("");
+
 const basicInfoSchema = z.object({
   name: z.string().trim().default(""),
   email: z.string().trim().default(""),
   phone: z.string().trim().default(""),
-  location: z.string().trim().default(""),
+  location: locationSchema,
   linkedin: z.string().trim().default(""),
   github: z.string().trim().default(""),
   website: z.string().trim().default(""),
@@ -51,11 +68,35 @@ const certificationSchema = z.object({
   url: z.string().trim().default(""),
 });
 
+const skillItemOrGroupSchema = z.union([
+  skillGroupSchema,
+  z.string().transform((str) => ({ category: "Technical Skills", items: [str] })),
+]);
+
+const skillsArrayOrObjectSchema = z.preprocess((val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) {
+    // If it's an array of strings, group them into a single category
+    if (val.length > 0 && typeof val[0] === "string") {
+      return [{ category: "Skills", items: val.map(String) }];
+    }
+    return val;
+  }
+  if (typeof val === "object") {
+    // If it's an object { Frontend: ["React"], Backend: ["Node"] }
+    return Object.entries(val).map(([category, items]) => ({
+      category,
+      items: Array.isArray(items) ? items.map(String) : [String(items)],
+    }));
+  }
+  return [];
+}, z.array(skillGroupSchema).default([]));
+
 const structuredResumeSchema = z.object({
   basics: basicInfoSchema.default({}),
   experience: z.array(experienceSchema).default([]),
   education: z.array(educationSchema).default([]),
-  skills: z.array(skillGroupSchema).default([]),
+  skills: skillsArrayOrObjectSchema,
   projects: z.array(projectSchema).default([]),
   certifications: z.array(certificationSchema).default([]),
 });

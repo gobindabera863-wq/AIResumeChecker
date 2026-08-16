@@ -6,8 +6,8 @@ const ApiError = require("../utils/ApiError");
 const { requireAuth } = require("../middleware/auth");
 const { analyzeLimiter } = require("../middleware/rateLimit");
 const { handleUploadMiddleware } = require("../middleware/upload");
-const { extractTextFromPDF } = require("../services/pdfService");
-const { parseResumeToJSON, analyzeResume } = require("../services/geminiService");
+const { extractTextFromFile } = require("../services/pdfService");
+const { parseResumeToJSON, analyzeResume, analyzeResumeExtended } = require("../services/geminiService");
 const { applyRewritesToResume } = require("../services/rewriteService");
 const { compareVersions } = require("../services/diffService");
 const Resume = require("../models/Resume");
@@ -17,12 +17,14 @@ const router = express.Router();
 const uploadOptionsSchema = z.object({
   title: z.string().trim().max(120).optional(),
   targetRole: z.string().trim().max(100).optional(),
+  jobDescription: z.string().trim().max(8000).optional(),
 });
 
 const analyzeBodySchema = z.object({
   targetRole: z.string().trim().max(100).optional(),
   versionNumber: z.union([z.number(), z.string()]).optional(),
   versionId: z.union([z.number(), z.string()]).optional(),
+  jobDescription: z.string().trim().max(8000).optional(),
 });
 
 const applyRewritesBodySchema = z.object({
@@ -45,16 +47,17 @@ router.post(
     const parsedOptions = uploadOptionsSchema.safeParse(req.body);
     const titleOption = parsedOptions.success ? parsedOptions.data.title : "";
     const targetRole = parsedOptions.success ? parsedOptions.data.targetRole || "" : "";
+    const jobDescription = parsedOptions.success ? parsedOptions.data.jobDescription || "" : "";
 
     const file = req.file;
 
-    // 2. Extract raw text from PDF buffer
-    const rawText = await extractTextFromPDF(file.buffer);
+    // 2. Extract raw text from PDF or DOCX buffer
+    const rawText = await extractTextFromFile(file.buffer, file.mimetype, file.originalname);
 
-    // 3. AI Structured Parsing with Gemini
+    // 3. AI Structured Parsing
     const structuredData = await parseResumeToJSON(rawText, targetRole);
 
-    // 4. Full AI Analysis with Gemini (ATS Score, Issues, Strengths, Rewrites, Keywords)
+    // 4. Basic AI Analysis (ATS Score, Issues, Strengths, Rewrites, Keywords)
     let analysis = null;
     try {
       analysis = await analyzeResume(rawText, structuredData, targetRole);
@@ -62,8 +65,16 @@ router.post(
       console.error("AI Analysis failed during upload (proceeding with parsing only):", analysisErr.message);
     }
 
+    // 4b. Extended deep AI analysis (overallScore, jobMatch, skills, weaknesses, etc.)
+    let extendedAnalysis = null;
+    try {
+      extendedAnalysis = await analyzeResumeExtended(rawText, structuredData, targetRole, jobDescription);
+    } catch (extErr) {
+      console.warn("Extended AI analysis failed during upload:", extErr.message);
+    }
+
     // 5. Determine title
-    const defaultTitle = file.originalname.replace(/\.pdf$/i, "").trim() || "Untitled Resume";
+    const defaultTitle = file.originalname.replace(/\.(pdf|docx)$/i, "").trim() || "Untitled Resume";
     const resumeTitle = titleOption || defaultTitle;
 
     // 6. Create Resume document with initial Version V1
@@ -71,6 +82,7 @@ router.post(
       user: req.user._id,
       title: resumeTitle,
       targetRole,
+      jobDescription,
       currentVersion: 1,
       versions: [
         {
@@ -80,6 +92,7 @@ router.post(
           rawText,
           structuredData,
           analysis,
+          extendedAnalysis,
           createdAt: new Date(),
         },
       ],
@@ -335,6 +348,59 @@ router.delete(
       throw ApiError.notFound("Resume not found");
     }
     res.json({ message: "Resume deleted successfully", id: req.params.id });
+  })
+);
+
+/**
+ * @route   POST /api/resumes/:id/groq-analyze
+ * @desc    Run deep extended AI analysis (overallScore, jobMatch, skills, weaknesses, suggestions, sections)
+ * @access  Private
+ */
+router.post(
+  "/:id/groq-analyze",
+  requireAuth,
+  analyzeLimiter,
+  asyncHandler(async (req, res) => {
+    const { targetRole, versionId, versionNumber, jobDescription } = analyzeBodySchema.parse(req.body || {});
+
+    const resume = await Resume.findOne({ _id: req.params.id, user: req.user._id });
+    if (!resume) throw ApiError.notFound("Resume not found");
+
+    if (targetRole !== undefined) resume.targetRole = targetRole;
+    if (jobDescription !== undefined) resume.jobDescription = jobDescription;
+    const activeTargetRole = resume.targetRole || "";
+    const activeJobDescription = jobDescription || resume.jobDescription || "";
+
+    const requestedVer = versionId || versionNumber;
+    let versionObj = requestedVer
+      ? resume.versions.find(
+          (v) => String(v._id) === String(requestedVer) || String(v.versionNumber) === String(requestedVer)
+        )
+      : null;
+    if (!versionObj) {
+      versionObj =
+        resume.versions.find((v) => v.versionNumber === resume.currentVersion) ||
+        resume.versions[resume.versions.length - 1];
+    }
+    if (!versionObj) throw ApiError.notFound("Resume version not found");
+
+    const extendedAnalysis = await analyzeResumeExtended(
+      versionObj.rawText,
+      versionObj.structuredData,
+      activeTargetRole,
+      activeJobDescription
+    );
+
+    versionObj.extendedAnalysis = extendedAnalysis;
+    resume.markModified("versions");
+    await resume.save();
+
+    res.json({
+      message: `Deep AI analysis generated for Version ${versionObj.versionNumber}`,
+      versionNumber: versionObj.versionNumber,
+      extendedAnalysis,
+      resume,
+    });
   })
 );
 

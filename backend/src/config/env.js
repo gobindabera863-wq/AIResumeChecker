@@ -23,6 +23,9 @@ module.exports = {
     .map((o) => o.trim())
     .filter(Boolean),
   geminiApiKey: process.env.GEMINI_API_KEY || "",
-  geminiModel: process.env.GEMINI_MODEL || "gemini-2.5-flash",
+  geminiApiKeyFallback: process.env.GEMINI_API_KEY_FALLBACK || "",
+  geminiModel: process.env.GEMINI_MODEL || "gemini-3.5-flash",
+  groqApiKey: process.env.GROQ_API_KEY || "",
+  groqModel: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   isProd: process.env.NODE_ENV === "production",
 };

@@ -18,10 +18,15 @@ function normalizeAnalysis(rawAnalysis) {
     };
 
   const keywordsPresent =
-    rawAnalysis.keywordsPresent || rawAnalysis.keywords?.present || [];
+    rawAnalysis.keywordsPresent ||
+    rawAnalysis.keywords?.present ||
+    rawAnalysis.keywords?.matched ||
+    [];
 
   const keywordsMissing =
-    rawAnalysis.keywordsMissing || rawAnalysis.keywords?.missing || [];
+    rawAnalysis.keywordsMissing ||
+    rawAnalysis.keywords?.missing ||
+    [];
 
   return {
     ...rawAnalysis,
@@ -32,7 +37,26 @@ function normalizeAnalysis(rawAnalysis) {
     summary:
       rawAnalysis.summary ||
       "Overall, this resume demonstrates a solid technical foundation. Incorporating quantified scale metrics into experience bullets and targeted role keywords will maximize your ATS compliance score and interview callback rates.",
-    model: rawAnalysis.model || "Gemini AI",
+    model: rawAnalysis.model || "AI",
+  };
+}
+
+function normalizeExtendedAnalysis(raw) {
+  if (!raw) return null;
+  return {
+    ...raw,
+    overallScore: raw.overallScore ?? 0,
+    atsScore: typeof raw.atsScore === "number" ? raw.atsScore : raw.atsScore?.overall ?? 0,
+    jobMatchScore: raw.jobMatchScore ?? 0,
+    skills: raw.skills || { matched: [], missing: [], important: [] },
+    strengths: raw.strengths || [],
+    weaknesses: raw.weaknesses || [],
+    suggestions: raw.suggestions || [],
+    keywords: raw.keywords || { matched: [], missing: [], recommended: [] },
+    sections: raw.sections || {},
+    bulletPointImprovements: raw.bulletPointImprovements || [],
+    issues: raw.issues || [],
+    bulletRewrites: raw.bulletRewrites || [],
   };
 }
 
@@ -62,6 +86,7 @@ export const resumesApi = {
       _id: v._id || `v-${v.versionNumber}`,
       id: v._id || `v-${v.versionNumber}`,
       analysis: normalizeAnalysis(v.analysis),
+      extendedAnalysis: normalizeExtendedAnalysis(v.extendedAnalysis),
     }));
     const latestVer = versions[versions.length - 1];
 
@@ -90,11 +115,12 @@ export const resumesApi = {
     };
   },
 
-  upload: async (file, title, targetRole = "") => {
+  upload: async (file, title, targetRole = "", jobDescription = "") => {
     const fd = new FormData();
     fd.append("resume", file);
     if (title) fd.append("title", title);
     if (targetRole) fd.append("targetRole", targetRole);
+    if (jobDescription) fd.append("jobDescription", jobDescription);
 
     const res = await apiClient.post("/resumes/upload", fd, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -129,14 +155,28 @@ export const resumesApi = {
       (v) => String(v._id) === String(versionId) || String(v.versionNumber) === String(versionId)
     );
     if (ver && ver.analysis) {
-      return { analysis: normalizeAnalysis(ver.analysis) };
+      return {
+        analysis: normalizeAnalysis(ver.analysis),
+        extendedAnalysis: normalizeExtendedAnalysis(ver.extendedAnalysis),
+      };
     }
 
     const versionNum = ver ? ver.versionNumber : versionId;
     const analysisRes = await apiClient.get(`/resumes/${id}/analysis`, {
       params: { version: versionNum },
     });
-    return { analysis: normalizeAnalysis(analysisRes.data.analysis) };
+    return {
+      analysis: normalizeAnalysis(analysisRes.data.analysis),
+      extendedAnalysis: null,
+    };
+  },
+
+  groqAnalyze: async (id, body = {}) => {
+    const res = await apiClient.post(`/resumes/${id}/groq-analyze`, body);
+    return {
+      ...res.data,
+      extendedAnalysis: normalizeExtendedAnalysis(res.data.extendedAnalysis),
+    };
   },
 
   rewrite: async (id, { rewriteIds = [], applyAll = false } = {}) => {

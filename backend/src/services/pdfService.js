@@ -1,4 +1,5 @@
 const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
 const zlib = require("zlib");
 const ApiError = require("../utils/ApiError");
 
@@ -75,7 +76,6 @@ async function extractTextFromPDF(pdfBuffer) {
   // Clean null bytes and control characters (except newlines and tabs)
   text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
 
-  // Scanned / Image-only / Low text content check
   if (text.length < 50) {
     throw ApiError.badRequest(
       "PDF appears to be scanned, image-only, or empty. Please upload a text-readable PDF resume."
@@ -85,6 +85,55 @@ async function extractTextFromPDF(pdfBuffer) {
   return text;
 }
 
+/**
+ * Extracts raw text from a DOCX buffer using mammoth.
+ */
+async function extractTextFromDOCX(docxBuffer) {
+  if (!docxBuffer || !Buffer.isBuffer(docxBuffer)) {
+    throw ApiError.badRequest("Invalid DOCX buffer provided");
+  }
+
+  let text = "";
+  try {
+    const result = await mammoth.extractRawText({ buffer: docxBuffer });
+    text = result.value || "";
+  } catch (err) {
+    throw ApiError.badRequest("Failed to extract text from DOCX file. The file may be corrupted or password-protected.");
+  }
+
+  // Clean control characters
+  text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "").trim();
+
+  if (text.length < 50) {
+    throw ApiError.badRequest(
+      "DOCX file appears to be empty or contains no readable text. Please upload a valid resume."
+    );
+  }
+
+  return text;
+}
+
+/**
+ * Universal file text extractor — dispatches to PDF or DOCX extractor based on mimetype.
+ * @param {Buffer} buffer - file buffer
+ * @param {string} mimetype - file MIME type
+ * @param {string} originalname - original filename (used as fallback for type detection)
+ */
+async function extractTextFromFile(buffer, mimetype, originalname = "") {
+  const ext = originalname.toLowerCase().slice(originalname.lastIndexOf("."));
+  const isDocx =
+    mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    ext === ".docx";
+
+  if (isDocx) {
+    return extractTextFromDOCX(buffer);
+  }
+
+  return extractTextFromPDF(buffer);
+}
+
 module.exports = {
   extractTextFromPDF,
+  extractTextFromDOCX,
+  extractTextFromFile,
 };

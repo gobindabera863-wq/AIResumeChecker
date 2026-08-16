@@ -5,6 +5,7 @@ const { structuredResumeSchema } = require("../schemas/resumeSchema");
 const { analysisSchema } = require("../schemas/analysisSchema");
 
 let aiClient = null;
+let fallbackAiClient = null;
 
 function getAiClient() {
   if (!aiClient) {
@@ -16,12 +17,20 @@ function getAiClient() {
   return aiClient;
 }
 
+function getFallbackAiClient() {
+  if (!fallbackAiClient) {
+    if (env.geminiApiKeyFallback) {
+      fallbackAiClient = new GoogleGenAI({ apiKey: env.geminiApiKeyFallback });
+    }
+  }
+  return fallbackAiClient;
+}
+
 /**
- * Helper to call Gemini model expecting a JSON response
+ * Execute content generation using the given Gemini client
  */
-async function callGeminiJSON(prompt) {
-  const ai = getAiClient();
-  const modelName = env.geminiModel || "gemini-2.5-flash";
+async function executeGeminiCall(ai, prompt) {
+  const modelName = env.geminiModel || "gemini-3.5-flash";
   let responseText = "";
 
   if (ai.models && typeof ai.models.generateContent === "function") {
@@ -50,6 +59,86 @@ async function callGeminiJSON(prompt) {
   }
 
   return JSON.parse(cleanedJsonText);
+}
+
+/**
+ * Helper to call Groq API expecting a JSON response
+ */
+async function callGroqJSON(prompt) {
+  if (!env.groqApiKey) {
+    throw ApiError.internal("GROQ_API_KEY is not configured in environment");
+  }
+
+  const modelName = env.groqModel || "llama-3.3-70b-versatile";
+  
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${env.groqApiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: [
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: {
+        type: "json_object"
+      }
+    })
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Groq API returned status ${response.status}: ${errText}`);
+  }
+
+  const data = await response.json();
+  const responseText = data.choices?.[0]?.message?.content || "";
+
+  let cleanedJsonText = responseText.trim();
+  if (cleanedJsonText.startsWith("```json")) {
+    cleanedJsonText = cleanedJsonText.replace(/^```json\s*/, "").replace(/```$/, "").trim();
+  } else if (cleanedJsonText.startsWith("```")) {
+    cleanedJsonText = cleanedJsonText.replace(/^```\s*/, "").replace(/```$/, "").trim();
+  }
+
+  return JSON.parse(cleanedJsonText);
+}
+
+/**
+ * Helper to call Gemini model expecting a JSON response with fallbacks
+ */
+async function callGeminiJSON(prompt) {
+  try {
+    const ai = getAiClient();
+    return await executeGeminiCall(ai, prompt);
+  } catch (primaryError) {
+    const fallbackAi = getFallbackAiClient();
+    if (fallbackAi) {
+      console.warn("Primary Gemini client failed, attempting fallback key...", primaryError.message);
+      try {
+        return await executeGeminiCall(fallbackAi, prompt);
+      } catch (fallbackError) {
+        console.error("Fallback Gemini client also failed:", fallbackError.message);
+      }
+    }
+
+    if (env.groqApiKey) {
+      console.warn("Gemini clients failed or not configured, attempting Groq fallback...");
+      try {
+        return await callGroqJSON(prompt);
+      } catch (groqError) {
+        console.error("Groq fallback call also failed:", groqError.message);
+        throw groqError;
+      }
+    }
+
+    throw primaryError;
+  }
 }
 
 /**
@@ -414,7 +503,105 @@ ${rawText}
   }
 }
 
+/**
+ * Extended deep AI analysis using Groq with the full rich schema.
+ * Returns overallScore, atsScore, jobMatchScore, skills, strengths, weaknesses,
+ * suggestions, keywords, sections, bulletPointImprovements, issues, bulletRewrites.
+ */
+async function analyzeResumeExtended(rawText, structuredData = {}, targetRole = "", jobDescription = "") {
+  if (!rawText || typeof rawText !== "string" || !rawText.trim()) {
+    throw ApiError.badRequest("Empty resume text provided for AI analysis");
+  }
+
+  const { groqAnalysisSchema } = require("../schemas/groqAnalysisSchema");
+
+  const jobDescSection = jobDescription && jobDescription.trim()
+    ? `\nJOB DESCRIPTION:\n${jobDescription.trim()}\n`
+    : "\nNo job description provided. Perform general resume analysis.\n";
+
+  const prompt = `You are a world-class AI resume analyst, ATS expert, and career strategist.
+Analyze the candidate's resume${targetRole ? ` for the role: "${targetRole}"` : ""}.${jobDescSection}
+Return ONLY valid JSON with these EXACT top-level keys (no markdown, no explanation):
+
+{
+  "overallScore": <number 0-100: holistic resume quality>,
+  "atsScore": <number 0-100: ATS compatibility — keywords, formatting, structure>,
+  "jobMatchScore": <number 0-100: match % between resume and job description; use 0 if no JD provided>,
+  "summary": "<2-3 sentence executive verdict: strengths, critical gaps, top action items>",
+  "skills": {
+    "matched": ["<skills found in both resume and JD>"],
+    "missing": ["<important skills in JD but absent from resume>"],
+    "important": ["<top skills from resume that stand out>"]
+  },
+  "strengths": [
+    {"id": "str-1", "title": "<title>", "section": "<section>", "detail": "<detail>", "evidence": "<evidence>"}
+  ],
+  "weaknesses": ["<specific weakness 1>", "<specific weakness 2>"],
+  "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>"],
+  "keywords": {
+    "matched": ["<keywords found in both>"],
+    "missing": ["<important keywords missing>"],
+    "recommended": ["<additional recommended keywords>"]
+  },
+  "sections": {
+    "summary": <0-100>,
+    "education": <0-100>,
+    "skills": <0-100>,
+    "experience": <0-100>,
+    "projects": <0-100>,
+    "certifications": <0-100>,
+    "achievements": <0-100>
+  },
+  "bulletPointImprovements": [
+    {"original": "<original bullet>", "improved": "<improved version>", "reason": "<why better>"}
+  ],
+  "issues": [
+    {"id": "issue-1", "title": "<title>", "severity": "critical|warning|minor", "section": "<section>", "problem": "<problem>", "fix": "<fix>"}
+  ],
+  "bulletRewrites": [
+    {"id": "rw-1", "original": "<original>", "rewritten": "<rewritten>", "section": "<section>", "rationale": "<rationale>", "metricsAdded": true|false}
+  ]
+}
+
+RULES:
+- Only use information PRESENT in the resume. Do NOT invent experience, companies, metrics, or certifications.
+- severity must be exactly "critical", "warning", or "minor".
+- Provide 5+ strengths, 5+ weaknesses, 5+ suggestions, 5-10 bulletPointImprovements, 5 issues, 5-10 bulletRewrites.
+- ATS score note: this is an AI-based ESTIMATE, not an official ATS system score.
+
+RESUME TEXT:
+${rawText}`;
+
+  try {
+    const parsedRaw = await callGeminiJSON(prompt);
+    return groqAnalysisSchema.parse(parsedRaw);
+  } catch (error) {
+    console.warn("Extended AI analysis unavailable, falling back to standard analysis:", error.message);
+    // Fall back to basic analysis and adapt it to the extended schema
+    const basicAnalysis = await analyzeResume(rawText, structuredData, targetRole).catch(() => null);
+    if (basicAnalysis) {
+      return groqAnalysisSchema.parse({
+        overallScore: basicAnalysis.atsScore?.overall ?? 0,
+        atsScore: basicAnalysis.atsScore?.overall ?? 0,
+        jobMatchScore: 0,
+        summary: basicAnalysis.summary || "",
+        skills: { matched: basicAnalysis.keywords?.present || [], missing: basicAnalysis.keywords?.missing || [], important: [] },
+        strengths: basicAnalysis.strengths || [],
+        weaknesses: (basicAnalysis.issues || []).filter(i => i.severity !== "minor").map(i => i.problem),
+        suggestions: (basicAnalysis.issues || []).map(i => i.fix),
+        keywords: { matched: basicAnalysis.keywords?.present || [], missing: basicAnalysis.keywords?.missing || [], recommended: [] },
+        sections: {},
+        bulletPointImprovements: (basicAnalysis.bulletRewrites || []).slice(0, 5).map(r => ({ original: r.original, improved: r.rewritten, reason: r.rationale })),
+        issues: basicAnalysis.issues || [],
+        bulletRewrites: basicAnalysis.bulletRewrites || [],
+      });
+    }
+    throw error;
+  }
+}
+
 module.exports = {
   parseResumeToJSON,
   analyzeResume,
+  analyzeResumeExtended,
 };

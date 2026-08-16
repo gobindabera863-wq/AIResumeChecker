@@ -37,9 +37,10 @@ export function useFullVersion(id, versionId) {
 export function useAnalysisForVersion(id, versionId) {
   return useQuery({
     queryKey: resumeKeys.versionAnalysis(id, versionId),
-    queryFn: () => resumesApi.analysisForVersion(id, versionId).then((d) => d.analysis),
+    queryFn: () => resumesApi.analysisForVersion(id, versionId),
     enabled: !!id && !!versionId,
     retry: false,
+    select: (d) => d,
   });
 }
 
@@ -55,7 +56,8 @@ export function useUploadResume() {
   const qc = useQueryClient();
   const toast = useToast();
   return useMutation({
-    mutationFn: ({ file, title }) => resumesApi.upload(file, title),
+    mutationFn: ({ file, title, jobDescription }) =>
+      resumesApi.upload(file, title, "", jobDescription || ""),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: resumeKeys.list() });
       qc.invalidateQueries({ queryKey: dashboardKey });
@@ -126,5 +128,22 @@ export function useDeleteResume() {
       toast.info("Resume deleted");
     },
     onError: (e) => toast.error("Couldn't delete resume", e?.message),
+  });
+}
+export function useGroqAnalyze(id) {
+  const qc = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (body) => resumesApi.groqAnalyze(id, body),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: resumeKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: resumeKeys.analyses(id) });
+      qc.invalidateQueries({ queryKey: ["resumes", "analysis", id] });
+      toast.success(
+        "Deep analysis complete",
+        `Overall score: ${data?.extendedAnalysis?.overallScore ?? "—"} / 100`
+      );
+    },
+    onError: (e) => toast.error("Deep analysis failed", e?.message),
   });
 }
